@@ -645,6 +645,160 @@ namespace backend.Migrations
                     b.ToTable("Items");
                 });
 
+            modelBuilder.Entity("backend.Models.ProductionOrder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ActualEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ActualStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("BomHeaderId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LotNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("PlannedEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("PlannedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime>("PlannedStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("ProducedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int?>("RoutingHeaderId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ScrapQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("TotalActualCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalEstimatedCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BomHeaderId");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("OrderNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ProductionOrders_OrderNumber");
+
+                    b.HasIndex("RoutingHeaderId");
+
+                    b.ToTable("ProductionOrders");
+                });
+
+            modelBuilder.Entity("backend.Models.ProductionOrderMaterial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("ConsumedQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<bool>("IsConsumed")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LotNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("ProductionOrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("RequiredQuantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int?>("SourceWarehouseId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("TotalCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitCost")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("UnitOfMeasure")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int?>("WipWarehouseId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.HasIndex("SourceWarehouseId");
+
+                    b.HasIndex("WipWarehouseId");
+
+                    b.ToTable("ProductionOrderMaterials");
+                });
+
             modelBuilder.Entity("backend.Models.PurchaseOrder", b =>
                 {
                     b.Property<int>("Id")
@@ -1137,6 +1291,64 @@ namespace backend.Migrations
                     b.Navigation("SourceWarehouse");
                 });
 
+            modelBuilder.Entity("backend.Models.ProductionOrder", b =>
+                {
+                    b.HasOne("backend.Models.BomHeader", "BomHeader")
+                        .WithMany()
+                        .HasForeignKey("BomHeaderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("backend.Models.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("backend.Models.RoutingHeader", "RoutingHeader")
+                        .WithMany()
+                        .HasForeignKey("RoutingHeaderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("BomHeader");
+
+                    b.Navigation("Item");
+
+                    b.Navigation("RoutingHeader");
+                });
+
+            modelBuilder.Entity("backend.Models.ProductionOrderMaterial", b =>
+                {
+                    b.HasOne("backend.Models.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("backend.Models.ProductionOrder", "ProductionOrder")
+                        .WithMany("Materials")
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Models.Warehouse", "SourceWarehouse")
+                        .WithMany()
+                        .HasForeignKey("SourceWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("backend.Models.Warehouse", "WipWarehouse")
+                        .WithMany()
+                        .HasForeignKey("WipWarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Item");
+
+                    b.Navigation("ProductionOrder");
+
+                    b.Navigation("SourceWarehouse");
+
+                    b.Navigation("WipWarehouse");
+                });
+
             modelBuilder.Entity("backend.Models.PurchaseOrder", b =>
                 {
                     b.HasOne("backend.Models.Supplier", "Supplier")
@@ -1192,6 +1404,11 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.BomHeader", b =>
                 {
                     b.Navigation("Components");
+                });
+
+            modelBuilder.Entity("backend.Models.ProductionOrder", b =>
+                {
+                    b.Navigation("Materials");
                 });
 
             modelBuilder.Entity("backend.Models.PurchaseOrder", b =>

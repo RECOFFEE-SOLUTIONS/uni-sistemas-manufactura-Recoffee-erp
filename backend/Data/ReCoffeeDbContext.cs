@@ -25,6 +25,8 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<InventoryLot> InventoryLots { get; set; } = null!;
     public DbSet<InventoryMovement> InventoryMovements { get; set; } = null!;
     public DbSet<InventoryTransaction> InventoryTransactions { get; set; } = null!;
+    public DbSet<ProductionOrder> ProductionOrders { get; set; } = null!;
+    public DbSet<ProductionOrderMaterial> ProductionOrderMaterials { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -255,6 +257,64 @@ public class ReCoffeeDbContext : IdentityDbContext
             entity.HasOne(e => e.DestinationWarehouse)
                   .WithMany()
                   .HasForeignKey(e => e.DestinationWarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 15. ProductionOrder: Número de orden único y relaciones con Item, BOM y Ruta
+        builder.Entity<ProductionOrder>(entity =>
+        {
+            entity.HasIndex(e => e.OrderNumber)
+                  .IsUnique()
+                  .HasDatabaseName("IX_ProductionOrders_OrderNumber");
+
+            entity.Property(e => e.PlannedQuantity).HasPrecision(18, 4);
+            entity.Property(e => e.ProducedQuantity).HasPrecision(18, 4);
+            entity.Property(e => e.ScrapQuantity).HasPrecision(18, 4);
+            entity.Property(e => e.TotalEstimatedCost).HasPrecision(18, 2);
+            entity.Property(e => e.TotalActualCost).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.BomHeader)
+                  .WithMany()
+                  .HasForeignKey(e => e.BomHeaderId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.RoutingHeader)
+                  .WithMany()
+                  .HasForeignKey(e => e.RoutingHeaderId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // 16. ProductionOrderMaterial: Materiales a consumir y almacenes origen/WIP
+        builder.Entity<ProductionOrderMaterial>(entity =>
+        {
+            entity.Property(e => e.RequiredQuantity).HasPrecision(18, 4);
+            entity.Property(e => e.ConsumedQuantity).HasPrecision(18, 4);
+            entity.Property(e => e.UnitCost).HasPrecision(18, 4);
+            entity.Property(e => e.TotalCost).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.ProductionOrder)
+                  .WithMany(p => p.Materials)
+                  .HasForeignKey(e => e.ProductionOrderId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.SourceWarehouse)
+                  .WithMany()
+                  .HasForeignKey(e => e.SourceWarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.WipWarehouse)
+                  .WithMany()
+                  .HasForeignKey(e => e.WipWarehouseId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
     }
