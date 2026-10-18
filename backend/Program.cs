@@ -28,6 +28,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 // 3. Services Injection
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBomExplosionService, BomExplosionService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 
 // 4. JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretKeyForReCoffeeERPAndMES2026ProjectMustBeLongEnough!";

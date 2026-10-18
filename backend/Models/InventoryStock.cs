@@ -19,8 +19,18 @@ public class InventoryStock
     [ForeignKey(nameof(ItemId))]
     public Item? Item { get; set; }
 
+    [Required]
+    [MaxLength(100)]
+    public string LotNumber { get; set; } = string.Empty; // Balance físico agrupado por artículo, almacén y lote
+
     [Column(TypeName = "decimal(18,4)")]
     public decimal Quantity { get; set; }
+
+    [Column(TypeName = "decimal(18,4)")]
+    public decimal ReservedQuantity { get; set; } = 0m;
+
+    [NotMapped]
+    public decimal AvailableQuantity => Math.Max(0m, Quantity - ReservedQuantity);
 
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 }
