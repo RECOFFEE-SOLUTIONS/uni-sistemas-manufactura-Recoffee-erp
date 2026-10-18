@@ -19,6 +19,11 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<BomComponent> BomComponents { get; set; } = null!;
     public DbSet<RoutingHeader> RoutingHeaders { get; set; } = null!;
     public DbSet<RoutingOperation> RoutingOperations { get; set; } = null!;
+    public DbSet<PurchaseOrder> PurchaseOrders { get; set; } = null!;
+    public DbSet<PurchaseOrderLine> PurchaseOrderLines { get; set; } = null!;
+    public DbSet<InventoryStock> InventoryStocks { get; set; } = null!;
+    public DbSet<InventoryLot> InventoryLots { get; set; } = null!;
+    public DbSet<InventoryMovement> InventoryMovements { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -128,6 +133,104 @@ public class ReCoffeeDbContext : IdentityDbContext
                   .WithMany(r => r.Operations)
                   .HasForeignKey(e => e.RoutingHeaderId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // 9. PurchaseOrder: Número de orden único y relación con Proveedor
+        builder.Entity<PurchaseOrder>(entity =>
+        {
+            entity.HasIndex(e => e.OrderNumber)
+                  .IsUnique()
+                  .HasDatabaseName("IX_PurchaseOrders_OrderNumber");
+
+            entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.Supplier)
+                  .WithMany()
+                  .HasForeignKey(e => e.SupplierId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 10. PurchaseOrderLine: Relación con Orden e Item
+        builder.Entity<PurchaseOrderLine>(entity =>
+        {
+            entity.Property(e => e.Quantity).HasPrecision(18, 4);
+            entity.Property(e => e.UnitPrice).HasPrecision(18, 4);
+            entity.Property(e => e.Subtotal).HasPrecision(18, 2);
+            entity.Property(e => e.ReceivedQuantity).HasPrecision(18, 4);
+
+            entity.HasOne(e => e.PurchaseOrder)
+                  .WithMany(o => o.Lines)
+                  .HasForeignKey(e => e.PurchaseOrderId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 11. InventoryStock: Stock consolidado por Almacén y Artículo
+        builder.Entity<InventoryStock>(entity =>
+        {
+            entity.HasIndex(e => new { e.WarehouseId, e.ItemId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_InventoryStocks_Warehouse_Item");
+
+            entity.Property(e => e.Quantity).HasPrecision(18, 4);
+
+            entity.HasOne(e => e.Warehouse)
+                  .WithMany()
+                  .HasForeignKey(e => e.WarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 12. InventoryLot: Trazabilidad por número de lote único
+        builder.Entity<InventoryLot>(entity =>
+        {
+            entity.HasIndex(e => e.LotNumber)
+                  .IsUnique()
+                  .HasDatabaseName("IX_InventoryLots_LotNumber");
+
+            entity.Property(e => e.InitialQuantity).HasPrecision(18, 4);
+            entity.Property(e => e.CurrentQuantity).HasPrecision(18, 4);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Warehouse)
+                  .WithMany()
+                  .HasForeignKey(e => e.WarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.PurchaseOrder)
+                  .WithMany()
+                  .HasForeignKey(e => e.PurchaseOrderId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // 13. InventoryMovement: Historial y Kardex de movimientos
+        builder.Entity<InventoryMovement>(entity =>
+        {
+            entity.Property(e => e.Quantity).HasPrecision(18, 4);
+            entity.Property(e => e.UnitCost).HasPrecision(18, 4);
+            entity.Property(e => e.TotalCost).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Warehouse)
+                  .WithMany()
+                  .HasForeignKey(e => e.WarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }
