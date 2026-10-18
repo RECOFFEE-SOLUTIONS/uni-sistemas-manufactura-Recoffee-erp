@@ -212,6 +212,49 @@ app.MapPost("/api/seed/purchases", async (IServiceProvider sp) =>
 .WithName("SeedPurchases")
 .WithOpenApi();
 
+app.MapPost("/api/seed/e2e-case-study", async (IServiceProvider sp, IWebHostEnvironment env) =>
+{
+    try
+    {
+        string docsDir = Path.Combine(env.ContentRootPath, "..", "docs", "evidencias");
+        if (!Directory.Exists(docsDir))
+        {
+            Directory.CreateDirectory(docsDir);
+        }
+        string csvPath = Path.Combine(docsDir, "Kardex_Transaccional.csv");
+        await TransactionalE2ESeeder.SeedAsync(sp, csvPath);
+        return Results.Ok(new { message = "Seeder Transaccional E2E (40 Bolsas PT-001) y exportación de Kardex CSV completados exitosamente.", csvPath });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error al sembrar ciclo E2E: {ex.Message}");
+    }
+})
+.WithName("SeedE2ECaseStudy")
+.WithOpenApi();
+
+app.MapGet("/api/inventory/kardex/export-csv", async (ReCoffeeDbContext context, IWebHostEnvironment env) =>
+{
+    try
+    {
+        string docsDir = Path.Combine(env.ContentRootPath, "..", "docs", "evidencias");
+        if (!Directory.Exists(docsDir))
+        {
+            Directory.CreateDirectory(docsDir);
+        }
+        string csvPath = Path.Combine(docsDir, "Kardex_Transaccional.csv");
+        await TransactionalE2ESeeder.ExportKardexToCsvAsync(context, csvPath);
+        var bytes = await File.ReadAllBytesAsync(csvPath);
+        return Results.File(bytes, "text/csv", "Kardex_Transaccional.csv");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error al exportar Kardex a CSV: {ex.Message}");
+    }
+})
+.WithName("ExportKardexCsv")
+.WithOpenApi();
+
 app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
 {
     try
@@ -232,6 +275,7 @@ app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
 .WithOpenApi();
 
 app.MapControllers();
+
 
 // Auto-migration and seeder execution on startup if DB is accessible
 using (var scope = app.Services.CreateScope())
