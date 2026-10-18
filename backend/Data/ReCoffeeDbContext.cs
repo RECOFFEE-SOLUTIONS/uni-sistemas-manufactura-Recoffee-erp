@@ -15,6 +15,8 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<Item> Items { get; set; } = null!;
     public DbSet<Supplier> Suppliers { get; set; } = null!;
     public DbSet<Customer> Customers { get; set; } = null!;
+    public DbSet<BomHeader> BomHeaders { get; set; } = null!;
+    public DbSet<BomComponent> BomComponents { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -56,6 +58,42 @@ public class ReCoffeeDbContext : IdentityDbContext
             entity.HasIndex(e => e.Code)
                   .IsUnique()
                   .HasDatabaseName("IX_Customers_Code");
+        });
+
+        // 5. BomHeader: Código único y relación con Item Padre
+        builder.Entity<BomHeader>(entity =>
+        {
+            entity.HasIndex(e => e.Code)
+                  .IsUnique()
+                  .HasDatabaseName("IX_BomHeaders_Code");
+
+            entity.Property(e => e.BaseQuantity)
+                  .HasPrecision(18, 4);
+
+            entity.HasOne(e => e.ParentItem)
+                  .WithMany()
+                  .HasForeignKey(e => e.ParentItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 6. BomComponent: Precisiones y relaciones con Cabecera e Item Componente
+        builder.Entity<BomComponent>(entity =>
+        {
+            entity.Property(e => e.Quantity)
+                  .HasPrecision(18, 4);
+
+            entity.Property(e => e.ScrapPercentage)
+                  .HasPrecision(18, 4);
+
+            entity.HasOne(e => e.BomHeader)
+                  .WithMany(b => b.Components)
+                  .HasForeignKey(e => e.BomHeaderId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ComponentItem)
+                  .WithMany()
+                  .HasForeignKey(e => e.ComponentItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

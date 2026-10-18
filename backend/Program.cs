@@ -165,13 +165,29 @@ app.MapPost("/api/seed/master-data", async (IServiceProvider sp) =>
 .WithName("SeedMasterData")
 .WithOpenApi();
 
+app.MapPost("/api/seed/bom", async (IServiceProvider sp) =>
+{
+    try
+    {
+        await BomDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Seeder de Lista de Materiales (BOM Nivel 1 y Nivel 0) ejecutado exitosamente." });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error al sembrar BOM: {ex.Message}");
+    }
+})
+.WithName("SeedBom")
+.WithOpenApi();
+
 app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
 {
     try
     {
         await IdentityDataSeeder.SeedAsync(sp);
         await MasterDataSeeder.SeedAsync(sp);
-        return Results.Ok(new { message = "Todos los seeders oficiales (Identity + Datos Maestros) ejecutados exitosamente." });
+        await BomDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Todos los seeders oficiales (Identity + Datos Maestros + BOM) ejecutados exitosamente." });
     }
     catch (Exception ex)
     {
@@ -197,7 +213,8 @@ using (var scope = app.Services.CreateScope())
             db.Database.Migrate();
             IdentityDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
             MasterDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
-            logger.LogInformation("Migraciones, Seeder de Identity y Seeder de Datos Maestros ejecutados satisfactoriamente.");
+            BomDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
+            logger.LogInformation("Migraciones, Seeder de Identity, Datos Maestros y BOM ejecutados satisfactoriamente.");
         }
         else
         {
