@@ -173,5 +173,78 @@ public static class PurchasingDataSeeder
             await context.SaveChangesAsync();
             logger.LogInformation("OC-2026-0002 sembrada como Emitida (lista para recepcionar).");
         }
+
+        // 3. Asegurar existencias iniciales de materias primas complementarias en ALM-001
+        var initialRawMaterials = new[]
+        {
+            (Item: mp002, Qty: 50.0m, Lot: "LOTE-MP-002-001"),
+            (Item: mp003, Qty: 50.0m, Lot: "LOTE-MP-003-001"),
+            (Item: mp004, Qty: 50.0m, Lot: "LOTE-MP-004-001")
+        };
+
+        foreach (var rm in initialRawMaterials)
+        {
+            if (rm.Item != null && !await context.InventoryStocks.AnyAsync(s => s.WarehouseId == almMp.Id && s.ItemId == rm.Item.Id))
+            {
+                context.InventoryStocks.Add(new InventoryStock
+                {
+                    WarehouseId = almMp.Id,
+                    ItemId = rm.Item.Id,
+                    LotNumber = rm.Lot,
+                    Quantity = rm.Qty,
+                    LastUpdated = DateTime.UtcNow.AddDays(-3)
+                });
+
+                context.InventoryLots.Add(new InventoryLot
+                {
+                    LotNumber = rm.Lot,
+                    ItemId = rm.Item.Id,
+                    WarehouseId = almMp.Id,
+                    InitialQuantity = rm.Qty,
+                    CurrentQuantity = rm.Qty,
+                    EntryDate = DateTime.UtcNow.AddDays(-3),
+                    Status = "Disponible",
+                    Notes = "Inventario inicial de materias primas complementarias",
+                    CreatedAt = DateTime.UtcNow.AddDays(-3)
+                });
+            }
+        }
+
+        // 4. Asegurar existencias iniciales de empaques en ALM-004
+        var initialPackaging = new[]
+        {
+            (Item: emp001, Qty: 100.0m, Lot: "LOTE-EMP-001-001"),
+            (Item: emp002, Qty: 100.0m, Lot: "LOTE-EMP-002-001")
+        };
+
+        foreach (var pack in initialPackaging)
+        {
+            if (pack.Item != null && !await context.InventoryStocks.AnyAsync(s => s.WarehouseId == almEmp.Id && s.ItemId == pack.Item.Id))
+            {
+                context.InventoryStocks.Add(new InventoryStock
+                {
+                    WarehouseId = almEmp.Id,
+                    ItemId = pack.Item.Id,
+                    LotNumber = pack.Lot,
+                    Quantity = pack.Qty,
+                    LastUpdated = DateTime.UtcNow.AddDays(-3)
+                });
+
+                context.InventoryLots.Add(new InventoryLot
+                {
+                    LotNumber = pack.Lot,
+                    ItemId = pack.Item.Id,
+                    WarehouseId = almEmp.Id,
+                    InitialQuantity = pack.Qty,
+                    CurrentQuantity = pack.Qty,
+                    EntryDate = DateTime.UtcNow.AddDays(-3),
+                    Status = "Disponible",
+                    Notes = "Inventario inicial de insumos de empaque",
+                    CreatedAt = DateTime.UtcNow.AddDays(-3)
+                });
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 }
