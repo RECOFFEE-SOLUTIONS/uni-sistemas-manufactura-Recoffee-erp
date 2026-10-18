@@ -799,6 +799,103 @@ namespace backend.Migrations
                     b.ToTable("ProductionOrderMaterials");
                 });
 
+            modelBuilder.Entity("backend.Models.ProductionOrderOperation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("ActualLaborMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ActualMachineMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ActualPassiveMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExecutedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsQualityCheck")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("OperationCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("OperatorNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("ProductionOrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("RequiresIIoTTelemetry")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("RoutingOperationId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SequenceOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("StandardLaborMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("StandardMachineMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("StandardPassiveMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("TotalActualMinutes")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("WorkCenter")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.HasIndex("RoutingOperationId");
+
+                    b.ToTable("ProductionOrderOperations");
+                });
+
             modelBuilder.Entity("backend.Models.PurchaseOrder", b =>
                 {
                     b.Property<int>("Id")
@@ -1452,6 +1549,24 @@ namespace backend.Migrations
                     b.Navigation("WipWarehouse");
                 });
 
+            modelBuilder.Entity("backend.Models.ProductionOrderOperation", b =>
+                {
+                    b.HasOne("backend.Models.ProductionOrder", "ProductionOrder")
+                        .WithMany("Operations")
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("backend.Models.RoutingOperation", "RoutingOperation")
+                        .WithMany()
+                        .HasForeignKey("RoutingOperationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ProductionOrder");
+
+                    b.Navigation("RoutingOperation");
+                });
+
             modelBuilder.Entity("backend.Models.PurchaseOrder", b =>
                 {
                     b.HasOne("backend.Models.Supplier", "Supplier")
@@ -1542,6 +1657,8 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.ProductionOrder", b =>
                 {
                     b.Navigation("Materials");
+
+                    b.Navigation("Operations");
                 });
 
             modelBuilder.Entity("backend.Models.PurchaseOrder", b =>

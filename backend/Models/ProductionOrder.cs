@@ -67,4 +67,5 @@ public class ProductionOrder
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<ProductionOrderMaterial> Materials { get; set; } = new List<ProductionOrderMaterial>();
+    public ICollection<ProductionOrderOperation> Operations { get; set; } = new List<ProductionOrderOperation>();
 }
