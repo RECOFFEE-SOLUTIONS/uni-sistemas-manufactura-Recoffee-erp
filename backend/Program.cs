@@ -196,6 +196,21 @@ app.MapPost("/api/seed/routings", async (IServiceProvider sp) =>
 .WithName("SeedRoutings")
 .WithOpenApi();
 
+app.MapPost("/api/seed/purchases", async (IServiceProvider sp) =>
+{
+    try
+    {
+        await PurchasingDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Seeder de Compras e Inventario Inicial ejecutado exitosamente." });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error al sembrar Compras: {ex.Message}");
+    }
+})
+.WithName("SeedPurchases")
+.WithOpenApi();
+
 app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
 {
     try
@@ -204,7 +219,8 @@ app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
         await MasterDataSeeder.SeedAsync(sp);
         await BomDataSeeder.SeedAsync(sp);
         await RoutingDataSeeder.SeedAsync(sp);
-        return Results.Ok(new { message = "Todos los seeders oficiales (Identity + Datos Maestros + BOM + Rutas) ejecutados exitosamente." });
+        await PurchasingDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Todos los seeders oficiales (Identity + Datos Maestros + BOM + Rutas + Compras/Inventario) ejecutados exitosamente." });
     }
     catch (Exception ex)
     {
@@ -232,7 +248,8 @@ using (var scope = app.Services.CreateScope())
             MasterDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
             BomDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
             RoutingDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
-            logger.LogInformation("Migraciones, Seeder de Identity, Datos Maestros, BOM y Rutas ejecutados satisfactoriamente.");
+            PurchasingDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
+            logger.LogInformation("Migraciones, Seeder de Identity, Datos Maestros, BOM, Rutas y Compras ejecutados satisfactoriamente.");
         }
         else
         {
