@@ -134,7 +134,7 @@ app.MapGet("/health", () => Results.Ok(new
 .WithName("HealthCheck")
 .WithOpenApi();
 
-// Endpoint manual de inicialización de seeder si se requiere
+// Endpoints manuales de inicialización de seeders
 app.MapPost("/api/seed/identity", async (IServiceProvider sp) =>
 {
     try
@@ -144,10 +144,41 @@ app.MapPost("/api/seed/identity", async (IServiceProvider sp) =>
     }
     catch (Exception ex)
     {
-        return Results.Problem($"Error al sembrar datos: {ex.Message}");
+        return Results.Problem($"Error al sembrar Identity: {ex.Message}");
     }
 })
 .WithName("SeedIdentity")
+.WithOpenApi();
+
+app.MapPost("/api/seed/master-data", async (IServiceProvider sp) =>
+{
+    try
+    {
+        await MasterDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Seeder de Datos Maestros (Almacenes, Artículos, Proveedores, Clientes) ejecutado exitosamente." });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error al sembrar Datos Maestros: {ex.Message}");
+    }
+})
+.WithName("SeedMasterData")
+.WithOpenApi();
+
+app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
+{
+    try
+    {
+        await IdentityDataSeeder.SeedAsync(sp);
+        await MasterDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Todos los seeders oficiales (Identity + Datos Maestros) ejecutados exitosamente." });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error al sembrar datos: {ex.Message}");
+    }
+})
+.WithName("SeedAll")
 .WithOpenApi();
 
 app.MapControllers();
@@ -165,7 +196,8 @@ using (var scope = app.Services.CreateScope())
         {
             db.Database.Migrate();
             IdentityDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
-            logger.LogInformation("Migraciones y Seeder de Identity ejecutados satisfactoriamente.");
+            MasterDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
+            logger.LogInformation("Migraciones, Seeder de Identity y Seeder de Datos Maestros ejecutados satisfactoriamente.");
         }
         else
         {
