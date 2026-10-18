@@ -1,53 +1,181 @@
+using System.Text;
 using backend.Data;
+using backend.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// 1. Database Context
 builder.Services.AddDbContext<ReCoffeeDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// 2. Identity Configuration
+builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+})
+.AddEntityFrameworkStores<ReCoffeeDbContext>()
+.AddDefaultTokenProviders();
+
+// 3. Services Injection
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+// 4. JWT Authentication
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretKeyForReCoffeeERPAndMES2026ProjectMustBeLongEnough!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ReCoffeeAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "ReCoffeeApp";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+    };
+});
+
+// 5. Authorization & CORS
+builder.Services.AddAuthorization();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// 6. Controllers
+builder.Services.AddControllers();
+
+// 7. Swagger / OpenAPI with JWT Support
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "ReCoffee Solutions - ERP & MES API",
+        Version = "v1",
+        Description = "API del Sistema de Manufactura y Gestión ERP/MES para ReCoffee Solutions"
+    });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Encabezado de autorización JWT usando el esquema Bearer. Ejemplo: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure HTTP request pipeline
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.MapGet("/", () => Results.Ok(new { status = "healthy", service = "ReCoffee Backend .NET 8" }))
-   .WithName("RootHealthCheck")
-   .WithOpenApi();
+app.UseCors("AllowAll");
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
-   .WithName("HealthCheck")
-   .WithOpenApi();
+app.UseAuthentication();
+app.UseAuthorization();
 
-var summaries = new[]
+// Base & Health Endpoints
+app.MapGet("/", () => Results.Ok(new
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
+    status = "healthy",
+    service = "ReCoffee Backend .NET 8",
+    security = "ASP.NET Core Identity & JWT Enabled"
+}))
+.WithName("RootHealthCheck")
 .WithOpenApi();
 
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+app.MapGet("/health", () => Results.Ok(new
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    status = "healthy",
+    timestamp = DateTime.UtcNow
+}))
+.WithName("HealthCheck")
+.WithOpenApi();
+
+// Endpoint manual de inicialización de seeder si se requiere
+app.MapPost("/api/seed/identity", async (IServiceProvider sp) =>
+{
+    try
+    {
+        await IdentityDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Seeder de Identity y Roles ejecutado exitosamente." });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error al sembrar datos: {ex.Message}");
+    }
+})
+.WithName("SeedIdentity")
+.WithOpenApi();
+
+app.MapControllers();
+
+// Auto-migration and seeder execution on startup if DB is accessible
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db = services.GetRequiredService<ReCoffeeDbContext>();
+        logger.LogInformation("Verificando conexión con PostgreSQL y aplicando migraciones pendientes...");
+        if (db.Database.CanConnect())
+        {
+            db.Database.Migrate();
+            IdentityDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
+            logger.LogInformation("Migraciones y Seeder de Identity ejecutados satisfactoriamente.");
+        }
+        else
+        {
+            logger.LogWarning("No se pudo conectar a la base de datos en el inicio. Las migraciones se aplicarán cuando la BD esté lista.");
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning("Excepción durante la verificación inicial de BD (esperada si el contenedor aún está iniciando): {Message}", ex.Message);
+    }
 }
+
+app.Run();
