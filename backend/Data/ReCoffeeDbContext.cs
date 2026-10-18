@@ -24,6 +24,7 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<InventoryStock> InventoryStocks { get; set; } = null!;
     public DbSet<InventoryLot> InventoryLots { get; set; } = null!;
     public DbSet<InventoryMovement> InventoryMovements { get; set; } = null!;
+    public DbSet<InventoryTransaction> InventoryTransactions { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -169,14 +170,15 @@ public class ReCoffeeDbContext : IdentityDbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // 11. InventoryStock: Stock consolidado por Almacén y Artículo
+        // 11. InventoryStock: Balance físico agrupado por artículo, almacén y lote
         builder.Entity<InventoryStock>(entity =>
         {
-            entity.HasIndex(e => new { e.WarehouseId, e.ItemId })
+            entity.HasIndex(e => new { e.WarehouseId, e.ItemId, e.LotNumber })
                   .IsUnique()
-                  .HasDatabaseName("IX_InventoryStocks_Warehouse_Item");
+                  .HasDatabaseName("IX_InventoryStocks_Warehouse_Item_Lot");
 
             entity.Property(e => e.Quantity).HasPrecision(18, 4);
+            entity.Property(e => e.ReservedQuantity).HasPrecision(18, 4);
 
             entity.HasOne(e => e.Warehouse)
                   .WithMany()
@@ -215,7 +217,7 @@ public class ReCoffeeDbContext : IdentityDbContext
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // 13. InventoryMovement: Historial y Kardex de movimientos
+        // 13. InventoryMovement: Movimientos de inventario legacy
         builder.Entity<InventoryMovement>(entity =>
         {
             entity.Property(e => e.Quantity).HasPrecision(18, 4);
@@ -230,6 +232,29 @@ public class ReCoffeeDbContext : IdentityDbContext
             entity.HasOne(e => e.Warehouse)
                   .WithMany()
                   .HasForeignKey(e => e.WarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 14. InventoryTransaction: Kardex inmutable para todas las transacciones (entradas, salidas, transferencias)
+        builder.Entity<InventoryTransaction>(entity =>
+        {
+            entity.Property(e => e.Quantity).HasPrecision(18, 4);
+            entity.Property(e => e.UnitCost).HasPrecision(18, 4);
+            entity.Property(e => e.TotalCost).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.SourceWarehouse)
+                  .WithMany()
+                  .HasForeignKey(e => e.SourceWarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.DestinationWarehouse)
+                  .WithMany()
+                  .HasForeignKey(e => e.DestinationWarehouseId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
     }

@@ -316,9 +316,9 @@ public class PurchasesController : ControllerBase
             };
             _context.InventoryLots.Add(lot);
 
-            // 2. Incrementar stock físico consolidado en el almacén destino
+            // 2. Incrementar stock físico por almacén, artículo y lote
             var stock = await _context.InventoryStocks
-                .FirstOrDefaultAsync(s => s.WarehouseId == targetWarehouse.Id && s.ItemId == item.Id);
+                .FirstOrDefaultAsync(s => s.WarehouseId == targetWarehouse.Id && s.ItemId == item.Id && s.LotNumber == lotNumber);
 
             if (stock == null)
             {
@@ -326,6 +326,7 @@ public class PurchasesController : ControllerBase
                 {
                     WarehouseId = targetWarehouse.Id,
                     ItemId = item.Id,
+                    LotNumber = lotNumber,
                     Quantity = line.Quantity,
                     LastUpdated = DateTime.UtcNow
                 };
@@ -337,7 +338,7 @@ public class PurchasesController : ControllerBase
                 stock.LastUpdated = DateTime.UtcNow;
             }
 
-            // 3. Registrar movimiento en Kardex de inventario
+            // 3. Registrar movimiento en Kardex de inventario (InventoryMovement & InventoryTransaction inmutable)
             var movement = new InventoryMovement
             {
                 MovementDate = receptionDate,
@@ -353,6 +354,24 @@ public class PurchasesController : ControllerBase
                 CreatedAt = DateTime.UtcNow
             };
             _context.InventoryMovements.Add(movement);
+
+            var tx = new InventoryTransaction
+            {
+                TransactionDate = receptionDate,
+                TransactionType = "ENTRADA_COMPRA",
+                ItemId = item.Id,
+                DestinationWarehouseId = targetWarehouse.Id,
+                SourceWarehouseId = null,
+                LotNumber = lotNumber,
+                Quantity = line.Quantity,
+                UnitCost = line.UnitPrice,
+                TotalCost = line.Subtotal,
+                ReferenceNumber = order.OrderNumber,
+                Notes = $"Entrada por recepción de orden de compra {order.OrderNumber}. Proveedor: {order.Supplier?.Name}",
+                PerformedBy = "Recepción Almacén",
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.InventoryTransactions.Add(tx);
 
             // 4. Actualizar la línea de orden de compra
             line.IsReceived = true;

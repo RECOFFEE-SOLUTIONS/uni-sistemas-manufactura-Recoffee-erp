@@ -80,13 +80,14 @@ public static class PurchasingDataSeeder
                 CreatedAt = DateTime.UtcNow.AddDays(-3)
             });
 
-            var stockMp = await context.InventoryStocks.FirstOrDefaultAsync(s => s.WarehouseId == almMp.Id && s.ItemId == mp001.Id);
+            var stockMp = await context.InventoryStocks.FirstOrDefaultAsync(s => s.WarehouseId == almMp.Id && s.ItemId == mp001.Id && s.LotNumber == "LOTE-MP-001-001");
             if (stockMp == null)
             {
                 context.InventoryStocks.Add(new InventoryStock
                 {
                     WarehouseId = almMp.Id,
                     ItemId = mp001.Id,
+                    LotNumber = "LOTE-MP-001-001",
                     Quantity = 350.0m,
                     LastUpdated = DateTime.UtcNow.AddDays(-3)
                 });
@@ -108,6 +109,23 @@ public static class PurchasingDataSeeder
                 TotalCost = 350.0m * mp001.Cost,
                 ReferenceNumber = "OC-2026-0001",
                 Notes = "Recepción inicial de borra de café de cafeterías locales."
+            });
+
+            context.InventoryTransactions.Add(new InventoryTransaction
+            {
+                TransactionDate = DateTime.UtcNow.AddDays(-3),
+                TransactionType = "ENTRADA_COMPRA",
+                ItemId = mp001.Id,
+                DestinationWarehouseId = almMp.Id,
+                SourceWarehouseId = null,
+                LotNumber = "LOTE-MP-001-001",
+                Quantity = 350.0m,
+                UnitCost = mp001.Cost,
+                TotalCost = 350.0m * mp001.Cost,
+                ReferenceNumber = "OC-2026-0001",
+                Notes = "Recepción inicial de borra de café de cafeterías locales.",
+                PerformedBy = "Sistema / Seeder",
+                CreatedAt = DateTime.UtcNow.AddDays(-3)
             });
 
             await context.SaveChangesAsync();
