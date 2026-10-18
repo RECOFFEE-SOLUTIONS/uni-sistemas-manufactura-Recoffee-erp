@@ -27,6 +27,8 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<InventoryTransaction> InventoryTransactions { get; set; } = null!;
     public DbSet<ProductionOrder> ProductionOrders { get; set; } = null!;
     public DbSet<ProductionOrderMaterial> ProductionOrderMaterials { get; set; } = null!;
+    public DbSet<SalesOrder> SalesOrders { get; set; } = null!;
+    public DbSet<SalesOrderLine> SalesOrderLines { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -315,6 +317,40 @@ public class ReCoffeeDbContext : IdentityDbContext
             entity.HasOne(e => e.WipWarehouse)
                   .WithMany()
                   .HasForeignKey(e => e.WipWarehouseId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 17. SalesOrder: Número de orden único y relación con Cliente
+        builder.Entity<SalesOrder>(entity =>
+        {
+            entity.HasIndex(e => e.OrderNumber)
+                  .IsUnique()
+                  .HasDatabaseName("IX_SalesOrders_OrderNumber");
+
+            entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.Customer)
+                  .WithMany()
+                  .HasForeignKey(e => e.CustomerId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 18. SalesOrderLine: Relación con Orden de Venta e Item
+        builder.Entity<SalesOrderLine>(entity =>
+        {
+            entity.Property(e => e.Quantity).HasPrecision(18, 4);
+            entity.Property(e => e.UnitPrice).HasPrecision(18, 4);
+            entity.Property(e => e.Subtotal).HasPrecision(18, 2);
+            entity.Property(e => e.DispatchedQuantity).HasPrecision(18, 4);
+
+            entity.HasOne(e => e.SalesOrder)
+                  .WithMany(s => s.Lines)
+                  .HasForeignKey(e => e.SalesOrderId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
     }
