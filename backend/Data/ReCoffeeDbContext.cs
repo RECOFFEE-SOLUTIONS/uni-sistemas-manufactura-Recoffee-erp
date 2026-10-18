@@ -29,6 +29,7 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<ProductionOrderMaterial> ProductionOrderMaterials { get; set; } = null!;
     public DbSet<SalesOrder> SalesOrders { get; set; } = null!;
     public DbSet<SalesOrderLine> SalesOrderLines { get; set; } = null!;
+    public DbSet<ProductionOrderOperation> ProductionOrderOperations { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -352,6 +353,28 @@ public class ReCoffeeDbContext : IdentityDbContext
                   .WithMany()
                   .HasForeignKey(e => e.ItemId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 19. ProductionOrderOperation: Seguimiento en piso de planta de operaciones RO-1 a RO-8
+        builder.Entity<ProductionOrderOperation>(entity =>
+        {
+            entity.Property(e => e.StandardLaborMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.StandardMachineMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.StandardPassiveMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.ActualLaborMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.ActualMachineMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.ActualPassiveMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.TotalActualMinutes).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.ProductionOrder)
+                  .WithMany(p => p.Operations)
+                  .HasForeignKey(e => e.ProductionOrderId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.RoutingOperation)
+                  .WithMany()
+                  .HasForeignKey(e => e.RoutingOperationId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
