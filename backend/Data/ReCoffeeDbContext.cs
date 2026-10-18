@@ -17,6 +17,8 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<Customer> Customers { get; set; } = null!;
     public DbSet<BomHeader> BomHeaders { get; set; } = null!;
     public DbSet<BomComponent> BomComponents { get; set; } = null!;
+    public DbSet<RoutingHeader> RoutingHeaders { get; set; } = null!;
+    public DbSet<RoutingOperation> RoutingOperations { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -94,6 +96,38 @@ public class ReCoffeeDbContext : IdentityDbContext
                   .WithMany()
                   .HasForeignKey(e => e.ComponentItemId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 7. RoutingHeader: Código único y relación con Item
+        builder.Entity<RoutingHeader>(entity =>
+        {
+            entity.HasIndex(e => e.Code)
+                  .IsUnique()
+                  .HasDatabaseName("IX_RoutingHeaders_Code");
+
+            entity.Property(e => e.TotalLaborMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.TotalMachineMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.TotalPassiveProcessMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.TotalCycleMinutes).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // 8. RoutingOperation: Precisiones y relación con Cabecera
+        builder.Entity<RoutingOperation>(entity =>
+        {
+            entity.Property(e => e.LaborMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.MachineMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.PassiveProcessMinutes).HasPrecision(18, 2);
+            entity.Property(e => e.SetupMinutes).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.RoutingHeader)
+                  .WithMany(r => r.Operations)
+                  .HasForeignKey(e => e.RoutingHeaderId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

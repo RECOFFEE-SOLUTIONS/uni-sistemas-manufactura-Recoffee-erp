@@ -181,6 +181,21 @@ app.MapPost("/api/seed/bom", async (IServiceProvider sp) =>
 .WithName("SeedBom")
 .WithOpenApi();
 
+app.MapPost("/api/seed/routings", async (IServiceProvider sp) =>
+{
+    try
+    {
+        await RoutingDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Seeder de Rutas Estándar (RO-1 a RO-8) ejecutado exitosamente." });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error al sembrar Rutas: {ex.Message}");
+    }
+})
+.WithName("SeedRoutings")
+.WithOpenApi();
+
 app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
 {
     try
@@ -188,7 +203,8 @@ app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
         await IdentityDataSeeder.SeedAsync(sp);
         await MasterDataSeeder.SeedAsync(sp);
         await BomDataSeeder.SeedAsync(sp);
-        return Results.Ok(new { message = "Todos los seeders oficiales (Identity + Datos Maestros + BOM) ejecutados exitosamente." });
+        await RoutingDataSeeder.SeedAsync(sp);
+        return Results.Ok(new { message = "Todos los seeders oficiales (Identity + Datos Maestros + BOM + Rutas) ejecutados exitosamente." });
     }
     catch (Exception ex)
     {
@@ -215,7 +231,8 @@ using (var scope = app.Services.CreateScope())
             IdentityDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
             MasterDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
             BomDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
-            logger.LogInformation("Migraciones, Seeder de Identity, Datos Maestros y BOM ejecutados satisfactoriamente.");
+            RoutingDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
+            logger.LogInformation("Migraciones, Seeder de Identity, Datos Maestros, BOM y Rutas ejecutados satisfactoriamente.");
         }
         else
         {
