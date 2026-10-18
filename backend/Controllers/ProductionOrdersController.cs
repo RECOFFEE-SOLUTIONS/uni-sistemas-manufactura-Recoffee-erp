@@ -480,4 +480,219 @@ public class ProductionOrdersController : ControllerBase
             Message = $"Orden de producción {order.OrderNumber} iniciada exitosamente. Se transfirieron {transferredDetails.Count} materiales desde ALM-001 y ALM-004 a WIP en ALM-002."
         });
     }
+
+    /// <summary>
+    /// Finaliza la orden de producción:
+    /// 1. Da salida al Trabajo en Proceso (WIP) descontándolo de ALM-002 y registrando en el Kardex.
+    /// 2. Genera automáticamente el identificador de Lote de Producto Terminado (ej. LOTE-PT-001-YYYYMMDD-001).
+    /// 3. Da entrada simultánea al Producto Terminado (PT-001) acreditándolo en el almacén de producto terminado (ALM-003).
+    /// 4. Actualiza la OP a estado 'Completada'.
+    /// </summary>
+    [HttpPost("{id:int}/complete")]
+    public async Task<ActionResult<CompleteProductionOrderResultDto>> CompleteProductionOrder(
+        int id,
+        [FromBody] CompleteProductionOrderDto? dto = null)
+    {
+        var order = await _context.ProductionOrders
+            .Include(p => p.Item)
+            .Include(p => p.Materials)
+                .ThenInclude(m => m.Item)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (order == null)
+        {
+            return NotFound(new { message = $"No se encontró la orden de producción con ID {id}." });
+        }
+
+        if (order.Status == "Planificada")
+        {
+            return BadRequest(new { message = $"La orden '{order.OrderNumber}' se encuentra en estado 'Planificada'. Debe iniciarse antes de poder completarse." });
+        }
+
+        if (order.Status == "Completada")
+        {
+            return BadRequest(new { message = $"La orden '{order.OrderNumber}' ya fue completada anteriormente." });
+        }
+
+        if (order.Status == "Cancelada")
+        {
+            return BadRequest(new { message = $"La orden '{order.OrderNumber}' está cancelada." });
+        }
+
+        var almWip = await _context.Warehouses.FirstOrDefaultAsync(w => w.Code == "ALM-002");
+        var almPt = await _context.Warehouses.FirstOrDefaultAsync(w => w.Code == "ALM-003");
+
+        if (almWip == null || almPt == null)
+        {
+            return BadRequest(new { message = "Los almacenes ALM-002 (WIP) o ALM-003 (Producto Terminado) no están configurados en la base de datos." });
+        }
+
+        DateTime completionDate = dto?.CompletionDate ?? DateTime.UtcNow;
+        decimal producedQuantity = dto?.ProducedQuantity ?? (order.PlannedQuantity > 0 ? order.PlannedQuantity : 1.0m);
+        decimal scrapQuantity = dto?.ScrapQuantity ?? 0m;
+
+        if (producedQuantity <= 0)
+        {
+            return BadRequest(new { message = "La cantidad producida debe ser estrictamente mayor a 0." });
+        }
+
+        // 1. Generar Lote Oficial de Producto Terminado con formato LOTE-PT-001-YYYYMMDD-XXX
+        string itemCode = order.Item?.Code ?? "PT-001";
+        var ptLotsCount = await _context.InventoryLots.CountAsync(l => l.ItemId == order.ItemId);
+        string finishedLotNumber = !string.IsNullOrEmpty(order.LotNumber)
+            ? order.LotNumber
+            : $"LOTE-{itemCode}-{completionDate:yyyyMMdd}-{(ptLotsCount + 1):D3}";
+
+        // Asegurar unicidad
+        if (await _context.InventoryLots.AnyAsync(l => l.LotNumber == finishedLotNumber))
+        {
+            finishedLotNumber = $"LOTE-{itemCode}-{completionDate:yyyyMMdd}-{order.Id:D3}-{(ptLotsCount + 1):D2}";
+        }
+
+        // 2. MOVIMIENTO 1: Salida del Trabajo en Proceso (WIP) descontándolo de ALM-002
+        int dischargedMaterialsCount = 0;
+        decimal totalWipCost = 0m;
+
+        foreach (var material in order.Materials)
+        {
+            decimal qtyToDischarge = material.ConsumedQuantity > 0 ? material.ConsumedQuantity : material.RequiredQuantity;
+            string materialLot = material.LotNumber ?? string.Empty;
+
+            // Descontar existencias físicas en ALM-002
+            var wipStock = await _context.InventoryStocks
+                .FirstOrDefaultAsync(s => s.WarehouseId == almWip.Id && s.ItemId == material.ItemId && s.LotNumber == materialLot);
+
+            if (wipStock != null)
+            {
+                decimal deduct = Math.Min(wipStock.Quantity, qtyToDischarge);
+                wipStock.Quantity -= deduct;
+                wipStock.LastUpdated = completionDate;
+            }
+
+            // Registrar salida de WIP en el Kardex inmutable
+            decimal matCost = material.TotalCost > 0 ? material.TotalCost : (material.UnitCost * qtyToDischarge);
+            totalWipCost += matCost;
+
+            var dischargeTx = new InventoryTransaction
+            {
+                TransactionDate = completionDate,
+                TransactionType = "SALIDA_WIP",
+                ItemId = material.ItemId,
+                SourceWarehouseId = almWip.Id,
+                DestinationWarehouseId = null,
+                LotNumber = materialLot,
+                Quantity = qtyToDischarge,
+                UnitCost = material.UnitCost,
+                TotalCost = matCost,
+                ReferenceNumber = order.OrderNumber,
+                Notes = $"Baja de Trabajo en Proceso (WIP) en ALM-002 por culminación de fabricación de OP {order.OrderNumber}.",
+                PerformedBy = "Módulo Producción MES",
+                CreatedAt = completionDate
+            };
+            _context.InventoryTransactions.Add(dischargeTx);
+            dischargedMaterialsCount++;
+        }
+
+        // 3. MOVIMIENTO 2: Entrada simultánea del Producto Terminado acreditando en ALM-003
+        var ptStock = await _context.InventoryStocks
+            .FirstOrDefaultAsync(s => s.WarehouseId == almPt.Id && s.ItemId == order.ItemId && s.LotNumber == finishedLotNumber);
+
+        if (ptStock == null)
+        {
+            ptStock = new InventoryStock
+            {
+                WarehouseId = almPt.Id,
+                ItemId = order.ItemId,
+                LotNumber = finishedLotNumber,
+                Quantity = producedQuantity,
+                LastUpdated = completionDate
+            };
+            _context.InventoryStocks.Add(ptStock);
+        }
+        else
+        {
+            ptStock.Quantity += producedQuantity;
+            ptStock.LastUpdated = completionDate;
+        }
+
+        // Crear registro en InventoryLot para trazabilidad
+        var ptLot = new InventoryLot
+        {
+            LotNumber = finishedLotNumber,
+            ItemId = order.ItemId,
+            WarehouseId = almPt.Id,
+            InitialQuantity = producedQuantity,
+            CurrentQuantity = producedQuantity,
+            EntryDate = completionDate,
+            Status = "Disponible",
+            Notes = $"Producto terminado fabricado por OP {order.OrderNumber}.",
+            CreatedAt = completionDate
+        };
+        _context.InventoryLots.Add(ptLot);
+
+        // Calcular costo unitario real de producción
+        decimal unitProductionCost = producedQuantity > 0
+            ? Math.Round(totalWipCost / producedQuantity, 4)
+            : (order.Item?.Cost ?? 0m);
+
+        // Registrar entrada a producto terminado en Kardex inmutable
+        var ptEntryTx = new InventoryTransaction
+        {
+            TransactionDate = completionDate,
+            TransactionType = "ENTRADA_PRODUCCION",
+            ItemId = order.ItemId,
+            SourceWarehouseId = almWip.Id,
+            DestinationWarehouseId = almPt.Id,
+            LotNumber = finishedLotNumber,
+            Quantity = producedQuantity,
+            UnitCost = unitProductionCost,
+            TotalCost = Math.Round(unitProductionCost * producedQuantity, 2),
+            ReferenceNumber = order.OrderNumber,
+            Notes = $"Ingreso de producto terminado terminado desde planta (ALM-002) hacia almacén de ventas y despacho (ALM-003). Lote: {finishedLotNumber}.",
+            PerformedBy = "Módulo Producción MES",
+            CreatedAt = completionDate
+        };
+        _context.InventoryTransactions.Add(ptEntryTx);
+
+        // 4. Actualizar Orden de Producción
+        order.Status = "Completada";
+        order.ActualEndDate = completionDate;
+        order.ProducedQuantity = producedQuantity;
+        order.ScrapQuantity = scrapQuantity;
+        order.LotNumber = finishedLotNumber;
+        order.TotalActualCost = totalWipCost > 0 ? totalWipCost : order.TotalEstimatedCost;
+        if (!string.IsNullOrWhiteSpace(dto?.Notes))
+        {
+            order.Notes = string.IsNullOrEmpty(order.Notes)
+                ? dto.Notes
+                : $"{order.Notes} | Finalización: {dto.Notes}";
+        }
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("OP {OrderNumber} completada exitosamente. Lote PT: {LotNumber}, Producido: {Qty} {Uom} en {Wh}",
+            order.OrderNumber, finishedLotNumber, producedQuantity, order.UnitOfMeasure, almPt.Code);
+
+        return Ok(new CompleteProductionOrderResultDto
+        {
+            ProductionOrderId = order.Id,
+            OrderNumber = order.OrderNumber,
+            Status = order.Status,
+            ActualEndDate = order.ActualEndDate.Value,
+            FinishedProductLotNumber = finishedLotNumber,
+            ItemId = order.ItemId,
+            ItemCode = order.Item?.Code ?? "PT-001",
+            ItemName = order.Item?.Name ?? "Abono Orgánico ReCoffee 5kg",
+            ProducedQuantity = producedQuantity,
+            ScrapQuantity = scrapQuantity,
+            UnitOfMeasure = order.UnitOfMeasure,
+            DestinationWarehouseCode = almPt.Code,
+            DestinationWarehouseName = almPt.Name,
+            NewStockInFinishedGoods = ptStock.Quantity,
+            WipMaterialsDischargedCount = dischargedMaterialsCount,
+            TotalActualCost = order.TotalActualCost,
+            UnitProductionCost = unitProductionCost,
+            Message = $"Orden de producción {order.OrderNumber} finalizada con éxito. Se acreditó el lote {finishedLotNumber} ({producedQuantity} {order.UnitOfMeasure}) en {almPt.Code} y se dio salida al WIP en {almWip.Code}."
+        });
+    }
 }

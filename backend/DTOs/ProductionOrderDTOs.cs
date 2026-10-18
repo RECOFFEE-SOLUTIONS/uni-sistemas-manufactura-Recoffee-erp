@@ -89,3 +89,34 @@ public class StartProductionOrderResultDto
     public List<WipTransferDetailDto> TransferredMaterials { get; set; } = new();
     public string Message { get; set; } = string.Empty;
 }
+
+public class CompleteProductionOrderDto
+{
+    public decimal? ProducedQuantity { get; set; }
+    public decimal? ScrapQuantity { get; set; }
+    public DateTime? CompletionDate { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class CompleteProductionOrderResultDto
+{
+    public int ProductionOrderId { get; set; }
+    public string OrderNumber { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public DateTime ActualEndDate { get; set; }
+    public string FinishedProductLotNumber { get; set; } = string.Empty;
+    public int ItemId { get; set; }
+    public string ItemCode { get; set; } = string.Empty;
+    public string ItemName { get; set; } = string.Empty;
+    public decimal ProducedQuantity { get; set; }
+    public decimal ScrapQuantity { get; set; }
+    public string UnitOfMeasure { get; set; } = string.Empty;
+    public string DestinationWarehouseCode { get; set; } = string.Empty; // ALM-003
+    public string DestinationWarehouseName { get; set; } = string.Empty;
+    public decimal NewStockInFinishedGoods { get; set; }
+    public int WipMaterialsDischargedCount { get; set; }
+    public decimal TotalActualCost { get; set; }
+    public decimal UnitProductionCost { get; set; }
+    public string Message { get; set; } = string.Empty;
+}
+
