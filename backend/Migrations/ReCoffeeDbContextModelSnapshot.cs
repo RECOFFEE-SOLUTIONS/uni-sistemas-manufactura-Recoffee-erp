@@ -645,6 +645,93 @@ namespace backend.Migrations
                     b.ToTable("Items");
                 });
 
+            modelBuilder.Entity("backend.Models.NonConformanceReport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DefectDescription")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("HumidityDeviation")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NcrNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int?>("ProductionOrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProposedAction")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("QualityInspectionId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ReportDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ResolutionNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ResponsiblePerson")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("RootCause")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("WeightDeviation")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NcrNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_NonConformanceReports_NcrNumber");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.HasIndex("QualityInspectionId")
+                        .IsUnique();
+
+                    b.ToTable("NonConformanceReports");
+                });
+
             modelBuilder.Entity("backend.Models.ProductionOrder", b =>
                 {
                     b.Property<int>("Id")
@@ -997,6 +1084,91 @@ namespace backend.Migrations
                     b.HasIndex("PurchaseOrderId");
 
                     b.ToTable("PurchaseOrderLines");
+                });
+
+            modelBuilder.Entity("backend.Models.QualityInspection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Appearance")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("HasNonConformance")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("HumidityPercentage")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("InspectionCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("InspectionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InspectorName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int?>("ItemId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NonConformanceReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<decimal?>("Ph")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("ProductionOrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ProductionOrderOperationId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InspectionCode")
+                        .IsUnique()
+                        .HasDatabaseName("IX_QualityInspections_InspectionCode");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.HasIndex("ProductionOrderOperationId");
+
+                    b.ToTable("QualityInspections");
                 });
 
             modelBuilder.Entity("backend.Models.RoutingHeader", b =>
@@ -1491,6 +1663,24 @@ namespace backend.Migrations
                     b.Navigation("SourceWarehouse");
                 });
 
+            modelBuilder.Entity("backend.Models.NonConformanceReport", b =>
+                {
+                    b.HasOne("backend.Models.ProductionOrder", "ProductionOrder")
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("backend.Models.QualityInspection", "QualityInspection")
+                        .WithOne("NonConformanceReport")
+                        .HasForeignKey("backend.Models.NonConformanceReport", "QualityInspectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProductionOrder");
+
+                    b.Navigation("QualityInspection");
+                });
+
             modelBuilder.Entity("backend.Models.ProductionOrder", b =>
                 {
                     b.HasOne("backend.Models.BomHeader", "BomHeader")
@@ -1597,6 +1787,30 @@ namespace backend.Migrations
                     b.Navigation("PurchaseOrder");
                 });
 
+            modelBuilder.Entity("backend.Models.QualityInspection", b =>
+                {
+                    b.HasOne("backend.Models.Item", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("backend.Models.ProductionOrder", "ProductionOrder")
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("backend.Models.ProductionOrderOperation", "ProductionOrderOperation")
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderOperationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Item");
+
+                    b.Navigation("ProductionOrder");
+
+                    b.Navigation("ProductionOrderOperation");
+                });
+
             modelBuilder.Entity("backend.Models.RoutingHeader", b =>
                 {
                     b.HasOne("backend.Models.Item", "Item")
@@ -1664,6 +1878,11 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Models.PurchaseOrder", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("backend.Models.QualityInspection", b =>
+                {
+                    b.Navigation("NonConformanceReport");
                 });
 
             modelBuilder.Entity("backend.Models.RoutingHeader", b =>
