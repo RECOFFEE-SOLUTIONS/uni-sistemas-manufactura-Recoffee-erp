@@ -519,3 +519,140 @@ export interface TraceableLotSummary {
   status: string;
 }
 
+// M5: KPI Engine & IIoT Telemetry Tipos
+
+export interface KpiDashboardSummary {
+  yieldPercent: number;
+  scrapPercent: number;
+  standardUnitCost: number;
+  actualUnitCost: number;
+  costVariance: number;
+  costVariancePercent: number;
+  inventoryTurnoverRatio: number;
+  daysSalesOfInventory: number;
+  oeePercent: number;
+  availabilityPercent: number;
+  performancePercent: number;
+  qualityPercent: number;
+  totalProductionOrders: number;
+  completedOrders: number;
+  totalProducedUnits: number;
+  calculatedAt: string;
+}
+
+export interface LotYield {
+  productionOrderId: number;
+  orderNumber: string;
+  lotNumber: string;
+  itemCode: string;
+  itemName: string;
+  plannedQuantity: number;
+  producedQuantity: number;
+  scrapQuantity: number;
+  totalUnits: number;
+  yieldPercent: number;
+  scrapPercent: number;
+  status: string;
+}
+
+export interface YieldKpiResponse {
+  overallYieldPercent: number;
+  overallScrapPercent: number;
+  totalPlannedUnits: number;
+  totalProducedUnits: number;
+  totalScrappedUnits: number;
+  totalInspectionsCount: number;
+  approvedInspectionsCount: number;
+  rejectedInspectionsCount: number;
+  inspectionApprovalRate: number;
+  activeNcrsCount: number;
+  lotDetails: LotYield[];
+  calculatedAt: string;
+}
+
+export interface LotCostComparison {
+  productionOrderId: number;
+  orderNumber: string;
+  lotNumber: string;
+  itemCode: string;
+  itemName: string;
+  producedQuantity: number;
+  totalActualCost: number;
+  actualUnitCost: number;
+  standardUnitCost: number;
+  variance: number;
+  variancePercent: number;
+  isFavorable: boolean;
+  completionDate?: string | null;
+}
+
+export interface UnitCostKpiResponse {
+  officialStandardCost: number;
+  averageActualUnitCost: number;
+  overallCostVariance: number;
+  overallVariancePercent: number;
+  isOverallFavorable: boolean;
+  currency: string;
+  totalOrdersEvaluated: number;
+  lotComparisons: LotCostComparison[];
+  calculatedAt: string;
+}
+
+export interface CategoryInventory {
+  category: string;
+  categoryName: string;
+  currentStockValue: number;
+  totalConsumedOrSoldValue: number;
+  turnoverRatio: number;
+  daysOnHand: number;
+}
+
+export interface InventoryTurnoverKpiResponse {
+  inventoryTurnoverRatio: number;
+  daysSalesOfInventory: number;
+  costOfGoodsSoldCogs: number;
+  totalCurrentInventoryValue: number;
+  totalPhysicalUnitsInStock: number;
+  categoryBreakdown: CategoryInventory[];
+  calculatedAt: string;
+}
+
+export interface OperationCycleTime {
+  operationCode: string;
+  operationName: string;
+  workCenter: string;
+  standardLaborMinutes: number;
+  standardMachineMinutes: number;
+  standardPassiveMinutes: number;
+  totalStandardMinutes: number;
+  totalActualMinutes: number;
+  efficiencyPercent: number;
+  executionsCount: number;
+  status: string;
+}
+
+export interface OeeKpiResponse {
+  overallOeePercent: number;
+  availabilityPercent: number;
+  performancePercent: number;
+  qualityPercent: number;
+  standardRouteCycleMinutes: number;
+  actualAverageCycleMinutes: number;
+  operationsCycleBreakdown: OperationCycleTime[];
+  calculatedAt: string;
+}
+
+export interface IiotTelemetryItem {
+  id: number;
+  productionOrderId?: number | null;
+  orderNumber?: string | null;
+  lotNumber: string;
+  operationCode: string;
+  sensorId: string;
+  temperatureCelsius: number;
+  moisturePercent: number;
+  timestamp: string;
+  isTargetMoistureAchieved: boolean;
+  createdAt: string;
+}
+
