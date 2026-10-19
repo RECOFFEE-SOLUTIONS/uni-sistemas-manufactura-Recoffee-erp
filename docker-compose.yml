@@ -62,7 +62,7 @@ services:
     profiles:
       - simulator
     environment:
-      - API_URL=http://backend:5000/api/telemetry
+      - API_URL=http://backend:5000/api/iiot/telemetry
     depends_on:
       - backend
     networks:
