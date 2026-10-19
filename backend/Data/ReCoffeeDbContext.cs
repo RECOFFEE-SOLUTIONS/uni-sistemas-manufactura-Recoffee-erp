@@ -30,6 +30,8 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<SalesOrder> SalesOrders { get; set; } = null!;
     public DbSet<SalesOrderLine> SalesOrderLines { get; set; } = null!;
     public DbSet<ProductionOrderOperation> ProductionOrderOperations { get; set; } = null!;
+    public DbSet<QualityInspection> QualityInspections { get; set; } = null!;
+    public DbSet<NonConformanceReport> NonConformanceReports { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -374,6 +376,51 @@ public class ReCoffeeDbContext : IdentityDbContext
             entity.HasOne(e => e.RoutingOperation)
                   .WithMany()
                   .HasForeignKey(e => e.RoutingOperationId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // 20. QualityInspection: Inspección de calidad RO-5
+        builder.Entity<QualityInspection>(entity =>
+        {
+            entity.HasIndex(e => e.InspectionCode)
+                  .IsUnique()
+                  .HasDatabaseName("IX_QualityInspections_InspectionCode");
+
+            entity.Property(e => e.HumidityPercentage).HasPrecision(18, 2);
+            entity.Property(e => e.WeightKg).HasPrecision(18, 2);
+            entity.Property(e => e.Ph).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.ProductionOrder)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductionOrderId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ProductionOrderOperation)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductionOrderOperationId)
+                  .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Item)
+                  .WithMany()
+                  .HasForeignKey(e => e.ItemId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.NonConformanceReport)
+                  .WithOne(n => n.QualityInspection)
+                  .HasForeignKey<NonConformanceReport>(n => n.QualityInspectionId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // 21. NonConformanceReport: Reporte de no conformidad (NCR)
+        builder.Entity<NonConformanceReport>(entity =>
+        {
+            entity.HasIndex(e => e.NcrNumber)
+                  .IsUnique()
+                  .HasDatabaseName("IX_NonConformanceReports_NcrNumber");
+
+            entity.HasOne(e => e.ProductionOrder)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductionOrderId)
                   .OnDelete(DeleteBehavior.SetNull);
         });
     }
