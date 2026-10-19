@@ -2,6 +2,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  name?: string;
   roles: string[];
 }
 
@@ -310,5 +311,211 @@ export interface SalesOrder {
   linesCount: number;
   lines: SalesOrderLine[];
   createdAt: string;
+}
+
+// M4: Capa MES, Trazabilidad y Calidad Tipos
+
+export interface ProductionOrderOperation {
+  id: number;
+  productionOrderId: number;
+  sequenceOrder: number;
+  operationCode: string; // RO-1 a RO-8
+  name: string;
+  workCenter: string;
+  status: "Pendiente" | "Iniciado" | "Completado" | "Pausado" | string;
+  standardLaborMinutes: number;
+  standardMachineMinutes: number;
+  standardPassiveMinutes: number;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  actualLaborMinutes: number;
+  actualMachineMinutes: number;
+  actualPassiveMinutes: number;
+  totalActualMinutes: number;
+  isQualityCheck: boolean;
+  requiresIIoTTelemetry: boolean;
+  executedBy?: string | null;
+  operatorNotes?: string | null;
+}
+
+export interface ProductionOrderMesDetail {
+  productionOrderId: number;
+  orderNumber: string;
+  itemCode: string;
+  itemName: string;
+  plannedQuantity: number;
+  producedQuantity: number;
+  unitOfMeasure: string;
+  status: string;
+  lotNumber?: string | null;
+  plannedStartDate?: string | null;
+  actualStartDate?: string | null;
+  actualEndDate?: string | null;
+  totalOperationsCount: number;
+  completedOperationsCount: number;
+  progressPercentage: number;
+  operations: ProductionOrderOperation[];
+}
+
+export interface QualityInspection {
+  id: number;
+  inspectionCode: string;
+  lotNumber: string;
+  productionOrderId?: number | null;
+  productionOrderNumber?: string | null;
+  productionOrderOperationId?: number | null;
+  operationCode?: string | null;
+  itemId?: number | null;
+  itemCode?: string | null;
+  itemName?: string | null;
+  inspectionDate: string;
+  inspectorName: string;
+  humidityPercentage: number;
+  weightKg: number;
+  appearance?: string | null;
+  ph?: number | null;
+  status: "Aprobado" | "Rechazado" | string;
+  hasNonConformance: boolean;
+  nonConformanceReason?: string | null;
+  notes?: string | null;
+  ncrId?: number | null;
+  ncrNumber?: string | null;
+  createdAt: string;
+}
+
+export interface NonConformanceReport {
+  id: number;
+  ncrNumber: string;
+  qualityInspectionId: number;
+  inspectionCode: string;
+  lotNumber: string;
+  productionOrderId?: number | null;
+  productionOrderNumber?: string | null;
+  reportDate: string;
+  severity: "Menor" | "Mayor" | "Crítica" | string;
+  defectDescription: string;
+  humidityDeviation?: string | null;
+  weightDeviation?: string | null;
+  rootCause?: string | null;
+  proposedAction: string;
+  status: "Abierto" | "En Tratamiento" | "Cerrado" | string;
+  responsiblePerson?: string | null;
+  resolutionNotes?: string | null;
+  closedAt?: string | null;
+  createdAt: string;
+}
+
+export interface NcrDispositionResult {
+  ncrId: number;
+  ncrNumber: string;
+  dispositionType: "Scrap" | "Retrabajo" | string;
+  ncrStatus: string;
+  lotNumber: string;
+  lotStatus: string;
+  productionOrderId?: number | null;
+  productionOrderNumber?: string | null;
+  productionOrderStatus?: string | null;
+  scrappedQuantity: number;
+  totalCostScrapped: number;
+  reactivatedOperations: string[];
+  message: string;
+  dispositionDate: string;
+}
+
+export interface TraceabilityUpstreamItem {
+  itemId: number;
+  itemCode: string;
+  itemName: string;
+  category: string;
+  consumedQuantity: number;
+  unitOfMeasure: string;
+  lotNumber: string;
+  sourceWarehouseCode: string;
+  purchaseOrderId?: number | null;
+  purchaseOrderNumber?: string | null;
+  purchaseOrderDate?: string | null;
+  receptionDate?: string | null;
+  supplierId?: number | null;
+  supplierCode?: string | null;
+  supplierName?: string | null;
+  supplierContact?: string | null;
+}
+
+export interface TraceabilityDownstreamItem {
+  salesOrderId: number;
+  salesOrderNumber: string;
+  customerId: number;
+  customerCode: string;
+  customerName: string;
+  customerAddress?: string | null;
+  customerContact?: string | null;
+  orderDate: string;
+  dispatchedDate?: string | null;
+  dispatchedQuantity: number;
+  unitOfMeasure: string;
+  unitPrice: number;
+  subtotal: number;
+  assignedLot: string;
+}
+
+export interface TraceabilityKardexEntry {
+  id: number;
+  transactionDate: string;
+  transactionType: string;
+  sourceWarehouseCode?: string | null;
+  destinationWarehouseCode?: string | null;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  referenceNumber?: string | null;
+  notes?: string | null;
+  performedBy?: string | null;
+}
+
+export interface LotTraceabilityResponse {
+  lotNumber: string;
+  itemId: number;
+  itemCode: string;
+  itemName: string;
+  category: string;
+  warehouseId?: number | null;
+  warehouseCode: string;
+  warehouseName: string;
+  initialQuantity: number;
+  currentQuantity: number;
+  unitOfMeasure: string;
+  entryDate: string;
+  status: string;
+  lotType: string;
+  productionOrder?: {
+    orderId: number;
+    orderNumber: string;
+    status: string;
+    plannedQuantity: number;
+    producedQuantity: number;
+    unitOfMeasure: string;
+    plannedStartDate?: string | null;
+    actualStartDate?: string | null;
+    actualEndDate?: string | null;
+    totalEstimatedCost: number;
+    totalActualCost: number;
+    bomCode?: string | null;
+    routingCode?: string | null;
+  } | null;
+  upstream: TraceabilityUpstreamItem[];
+  downstream: TraceabilityDownstreamItem[];
+  kardexTimeline: TraceabilityKardexEntry[];
+}
+
+export interface TraceableLotSummary {
+  lotNumber: string;
+  itemCode: string;
+  itemName: string;
+  category: string;
+  warehouseCode: string;
+  currentQuantity: number;
+  unitOfMeasure: string;
+  entryDate: string;
+  status: string;
 }
 
