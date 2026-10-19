@@ -361,6 +361,56 @@ namespace backend.Migrations
                     b.ToTable("Customers");
                 });
 
+            modelBuilder.Entity("backend.Models.IiotTelemetryLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal>("MoisturePercent")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("OperationCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int?>("ProductionOrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SensorId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("TemperatureCelsius")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductionOrderId");
+
+                    b.HasIndex("LotNumber", "Timestamp")
+                        .HasDatabaseName("IX_IiotTelemetryLogs_LotNumber_Timestamp");
+
+                    b.ToTable("IiotTelemetryLogs");
+                });
+
             modelBuilder.Entity("backend.Models.InventoryLot", b =>
                 {
                     b.Property<int>("Id")
@@ -1572,6 +1622,16 @@ namespace backend.Migrations
                         .IsRequired();
 
                     b.Navigation("ParentItem");
+                });
+
+            modelBuilder.Entity("backend.Models.IiotTelemetryLog", b =>
+                {
+                    b.HasOne("backend.Models.ProductionOrder", "ProductionOrder")
+                        .WithMany()
+                        .HasForeignKey("ProductionOrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ProductionOrder");
                 });
 
             modelBuilder.Entity("backend.Models.InventoryLot", b =>

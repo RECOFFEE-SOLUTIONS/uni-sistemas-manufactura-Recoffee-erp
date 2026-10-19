@@ -32,6 +32,7 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<ProductionOrderOperation> ProductionOrderOperations { get; set; } = null!;
     public DbSet<QualityInspection> QualityInspections { get; set; } = null!;
     public DbSet<NonConformanceReport> NonConformanceReports { get; set; } = null!;
+    public DbSet<IiotTelemetryLog> IiotTelemetryLogs { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -417,6 +418,21 @@ public class ReCoffeeDbContext : IdentityDbContext
             entity.HasIndex(e => e.NcrNumber)
                   .IsUnique()
                   .HasDatabaseName("IX_NonConformanceReports_NcrNumber");
+
+            entity.HasOne(e => e.ProductionOrder)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProductionOrderId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // 22. IiotTelemetryLog: Telemetría de secado solar RO-3
+        builder.Entity<IiotTelemetryLog>(entity =>
+        {
+            entity.HasIndex(e => new { e.LotNumber, e.Timestamp })
+                  .HasDatabaseName("IX_IiotTelemetryLogs_LotNumber_Timestamp");
+
+            entity.Property(e => e.TemperatureCelsius).HasPrecision(18, 2);
+            entity.Property(e => e.MoisturePercent).HasPrecision(18, 2);
 
             entity.HasOne(e => e.ProductionOrder)
                   .WithMany()
