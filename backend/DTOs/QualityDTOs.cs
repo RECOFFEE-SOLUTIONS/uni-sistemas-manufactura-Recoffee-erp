@@ -78,3 +78,37 @@ public class CloseNcrRequestDto
     public string? ResponsiblePerson { get; set; }
     public string? ActionTaken { get; set; }
 }
+
+public class DisposeScrapRequestDto
+{
+    public decimal? ScrapQuantity { get; set; }
+    public string? Reason { get; set; }
+    public string? ResponsiblePerson { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class DisposeReworkRequestDto
+{
+    public List<string>? ReworkOperations { get; set; } // Ej: ["RO-3", "RO-4", "RO-5"]
+    public string? Instructions { get; set; }
+    public string? ResponsiblePerson { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class NcrDispositionResultDto
+{
+    public int NcrId { get; set; }
+    public string NcrNumber { get; set; } = string.Empty;
+    public string DispositionType { get; set; } = string.Empty; // Scrap o Retrabajo
+    public string NcrStatus { get; set; } = string.Empty;
+    public string LotNumber { get; set; } = string.Empty;
+    public string LotStatus { get; set; } = string.Empty;
+    public int? ProductionOrderId { get; set; }
+    public string? ProductionOrderNumber { get; set; }
+    public string? ProductionOrderStatus { get; set; }
+    public decimal ScrappedQuantity { get; set; }
+    public decimal TotalCostScrapped { get; set; }
+    public List<string> ReactivatedOperations { get; set; } = new();
+    public string Message { get; set; } = string.Empty;
+    public DateTime DispositionDate { get; set; }
+}

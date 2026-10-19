@@ -536,17 +536,62 @@ public class ProductionOrdersController : ControllerBase
             return BadRequest(new { message = "La cantidad producida debe ser estrictamente mayor a 0." });
         }
 
-        // 1. Generar Lote Oficial de Producto Terminado con formato LOTE-PT-001-YYYYMMDD-XXX
+        // 1. Generar / Obtener Lote Oficial de Producto Terminado
         string itemCode = order.Item?.Code ?? "PT-001";
         var ptLotsCount = await _context.InventoryLots.CountAsync(l => l.ItemId == order.ItemId);
         string finishedLotNumber = !string.IsNullOrEmpty(order.LotNumber)
             ? order.LotNumber
             : $"LOTE-{itemCode}-{completionDate:yyyyMMdd}-{(ptLotsCount + 1):D3}";
 
-        // Asegurar unicidad
-        if (await _context.InventoryLots.AnyAsync(l => l.LotNumber == finishedLotNumber))
+        // BLOQUEO ESTRICTO WI-4.04: Validar No Conformidades (NCR) y estado de calidad del lote antes de transferir a ALM-003
+        var activeNcr = await _context.NonConformanceReports
+            .FirstOrDefaultAsync(n => (n.ProductionOrderId == order.Id || (order.LotNumber != null && n.LotNumber == order.LotNumber) || n.LotNumber == finishedLotNumber) && n.Status != "Cerrado");
+
+        if (activeNcr != null)
         {
-            finishedLotNumber = $"LOTE-{itemCode}-{completionDate:yyyyMMdd}-{order.Id:D3}-{(ptLotsCount + 1):D2}";
+            _logger.LogWarning("Transferencia a ALM-003 bloqueada para OP {OrderNumber}: NCR activo {NcrNumber} en estado '{Status}'.",
+                order.OrderNumber, activeNcr.NcrNumber, activeNcr.Status);
+            return BadRequest(new
+            {
+                message = $"Transferencia a ALM-003 bloqueada estrictamente: La orden '{order.OrderNumber}' o el lote asociado '{activeNcr.LotNumber}' presenta un Reporte de No Conformidad (NCR) activo ({activeNcr.NcrNumber}) en estado '{activeNcr.Status}'. No se autoriza el ingreso a producto terminado hasta que se ejecute la disposición y cierre técnico de la no conformidad.",
+                ncrNumber = activeNcr.NcrNumber,
+                ncrStatus = activeNcr.Status,
+                defectDescription = activeNcr.DefectDescription,
+                proposedAction = activeNcr.ProposedAction
+            });
+        }
+
+        var rejectedInspection = await _context.QualityInspections
+            .Include(q => q.NonConformanceReport)
+            .Where(q => (q.ProductionOrderId == order.Id || (order.LotNumber != null && q.LotNumber == order.LotNumber) || q.LotNumber == finishedLotNumber) && q.Status == "Rechazado")
+            .OrderByDescending(q => q.InspectionDate)
+            .FirstOrDefaultAsync();
+
+        if (rejectedInspection != null && (rejectedInspection.NonConformanceReport == null || rejectedInspection.NonConformanceReport.Status != "Cerrado"))
+        {
+            _logger.LogWarning("Transferencia a ALM-003 bloqueada para OP {OrderNumber}: Inspección de calidad {Code} rechazada sin resolución.",
+                order.OrderNumber, rejectedInspection.InspectionCode);
+            return BadRequest(new
+            {
+                message = $"Transferencia a ALM-003 bloqueada estrictamente: La orden '{order.OrderNumber}' cuenta con una inspección técnica de calidad ({rejectedInspection.InspectionCode}) en estado 'Rechazado' sin resolución técnica aprobada.",
+                inspectionCode = rejectedInspection.InspectionCode,
+                reason = rejectedInspection.NonConformanceReason
+            });
+        }
+
+        var lotRecord = await _context.InventoryLots
+            .FirstOrDefaultAsync(l => (l.LotNumber == finishedLotNumber || (order.LotNumber != null && l.LotNumber == order.LotNumber)));
+
+        if (lotRecord != null && (lotRecord.Status == "En Cuarentena" || lotRecord.Status == "Rechazado" || lotRecord.Status == "Scrap / Desecho"))
+        {
+            _logger.LogWarning("Transferencia a ALM-003 bloqueada para OP {OrderNumber}: Lote {LotNumber} en estado {Status}.",
+                order.OrderNumber, lotRecord.LotNumber, lotRecord.Status);
+            return BadRequest(new
+            {
+                message = $"Transferencia a ALM-003 bloqueada estrictamente: El lote '{lotRecord.LotNumber}' se encuentra en estado '{lotRecord.Status}'. Bajo la política de calidad de ReCoffee Solutions, ningún lote no conforme puede ser transferido a ALM-003 ni despachado a clientes.",
+                lotNumber = lotRecord.LotNumber,
+                lotStatus = lotRecord.Status
+            });
         }
 
         // 2. MOVIMIENTO 1: Salida del Trabajo en Proceso (WIP) descontándolo de ALM-002
@@ -615,20 +660,32 @@ public class ProductionOrdersController : ControllerBase
             ptStock.LastUpdated = completionDate;
         }
 
-        // Crear registro en InventoryLot para trazabilidad
-        var ptLot = new InventoryLot
+        // Crear o actualizar registro en InventoryLot para trazabilidad
+        if (lotRecord == null)
         {
-            LotNumber = finishedLotNumber,
-            ItemId = order.ItemId,
-            WarehouseId = almPt.Id,
-            InitialQuantity = producedQuantity,
-            CurrentQuantity = producedQuantity,
-            EntryDate = completionDate,
-            Status = "Disponible",
-            Notes = $"Producto terminado fabricado por OP {order.OrderNumber}.",
-            CreatedAt = completionDate
-        };
-        _context.InventoryLots.Add(ptLot);
+            lotRecord = new InventoryLot
+            {
+                LotNumber = finishedLotNumber,
+                ItemId = order.ItemId,
+                WarehouseId = almPt.Id,
+                InitialQuantity = producedQuantity,
+                CurrentQuantity = producedQuantity,
+                EntryDate = completionDate,
+                Status = "Disponible",
+                Notes = $"Producto terminado fabricado por OP {order.OrderNumber}.",
+                CreatedAt = completionDate
+            };
+            _context.InventoryLots.Add(lotRecord);
+        }
+        else
+        {
+            lotRecord.WarehouseId = almPt.Id;
+            lotRecord.CurrentQuantity = producedQuantity;
+            lotRecord.Status = "Disponible";
+            lotRecord.Notes = string.IsNullOrWhiteSpace(lotRecord.Notes)
+                ? $"Producto terminado fabricado por OP {order.OrderNumber}."
+                : $"{lotRecord.Notes} | Producto terminado fabricado por OP {order.OrderNumber}.";
+        }
 
         // Calcular costo unitario real de producción
         decimal unitProductionCost = producedQuantity > 0
