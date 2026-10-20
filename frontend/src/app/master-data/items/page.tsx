@@ -13,11 +13,18 @@ import {
   AlertCircle,
   RefreshCw,
   Tag,
+  Layers,
+  FileText,
+  DollarSign,
+  Coins,
+  Scale,
+  Check,
 } from "lucide-react";
 import apiClient from "@/lib/api";
 import { Item } from "@/types";
 import { useToast } from "@/context/ToastContext";
 import Modal from "@/components/Modal";
+import ActionTooltipButton from "@/components/ActionTooltip";
 
 export default function ItemsPage() {
   const { showToast } = useToast();
@@ -107,128 +114,86 @@ export default function ItemsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.code.trim() || !formData.name.trim() || !formData.category.trim()) {
-      setModalError("El código, nombre y categoría son obligatorios.");
-      return;
-    }
-
-    if (formData.cost < 0 || formData.standardCost < 0) {
-      setModalError("Los costos no pueden ser negativos.");
-      return;
-    }
-
     setIsSubmitting(true);
     setModalError(null);
 
-    const payload = {
-      code: formData.code.trim().toUpperCase(),
-      name: formData.name.trim(),
-      description: formData.description.trim() || null,
-      category: formData.category.trim().toUpperCase(),
-      unitOfMeasure: formData.unitOfMeasure.trim(),
-      cost: Number(formData.cost),
-      standardCost: Number(formData.standardCost),
-      isActive: formData.isActive,
-    };
-
     try {
       if (editingItem) {
-        await apiClient.put(`/api/items/${editingItem.id}`, {
-          ...editingItem,
-          ...payload,
-        });
-        showToast(`Artículo ${payload.code} actualizado exitosamente`, "success");
+        await apiClient.put(`/api/items/${editingItem.id}`, formData);
+        showToast(`Artículo ${formData.code} actualizado correctamente`, "success");
       } else {
-        await apiClient.post("/api/items", payload);
-        showToast(`Artículo ${payload.code} creado exitosamente`, "success");
+        await apiClient.post("/api/items", formData);
+        showToast(`Artículo ${formData.code} creado exitosamente`, "success");
       }
       setIsModalOpen(false);
       fetchItems();
     } catch (err: unknown) {
-      if (err && typeof err === "object" && "response" in err) {
-        const axErr = err as { response?: { status?: number; data?: { message?: string } } };
-        const msg = axErr.response?.data?.message || "Ocurrió un error al procesar el artículo.";
-        setModalError(msg);
-        showToast(msg, "error");
-      } else {
-        setModalError("No se pudo conectar con el servidor.");
-        showToast("Error de conexión con el backend", "error");
-      }
+      const errorMsg =
+        (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
+        "Error al procesar la solicitud en el catálogo.";
+      setModalError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (item: Item) => {
-    if (!confirm(`¿Está seguro de eliminar o desactivar el artículo "${item.code} - ${item.name}"?`)) {
+  const handleDelete = async (i: Item) => {
+    if (!confirm(`¿Está seguro de eliminar o desactivar el artículo ${i.code} - ${i.name}?`)) {
       return;
     }
-
     try {
-      const res = await apiClient.delete(`/api/items/${item.id}`);
-      showToast(res.data?.message || `Artículo ${item.code} procesado`, "success");
+      await apiClient.delete(`/api/items/${i.id}`);
+      showToast(`Artículo ${i.code} eliminado correctamente`, "success");
       fetchItems();
     } catch {
-      showToast("Error al intentar eliminar el artículo", "error");
+      showToast("No se pudo eliminar el artículo (puede tener transacciones asociadas)", "error");
     }
   };
 
   const getCategoryBadge = (cat: string) => {
-    switch (cat.toUpperCase()) {
+    switch (cat) {
       case "MP":
-        return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+        return "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/20";
       case "EMP":
-        return "bg-cyan-500/10 text-cyan-400 border-cyan-500/30";
+        return "bg-blue-500/10 text-blue-500 dark:text-blue-400 border-blue-500/20";
       case "SEM":
-        return "bg-purple-500/10 text-purple-400 border-purple-500/30";
+        return "bg-amber-500/10 text-amber-500 dark:text-amber-400 border-amber-500/20";
       case "PT":
-        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+        return "bg-purple-500/10 text-purple-500 dark:text-purple-400 border-purple-500/20";
       default:
-        return "bg-slate-500/10 text-slate-400 border-slate-500/30";
-    }
-  };
-
-  const getCategoryName = (cat: string) => {
-    switch (cat.toUpperCase()) {
-      case "MP":
-        return "Materia Prima (MP)";
-      case "EMP":
-        return "Empaque (EMP)";
-      case "SEM":
-        return "Semielaborado (SEM)";
-      case "PT":
-        return "Producto Terminado (PT)";
-      default:
-        return cat;
+        return "bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20";
     }
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Cabecera */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-slate-900 border border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
-            <Boxes className="w-6 h-6" />
+    <div className="space-y-6">
+      {/* Encabezado */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+              Datos Maestros • M1
+            </span>
+            <span className="text-xs text-slate-400 font-mono">
+              Total: {filteredItems.length} artículos
+            </span>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">
-              Catálogo de Artículos y Productos
-            </h1>
-            <p className="text-xs text-slate-400">
-              Gestión de Materias Primas (MP), Empaques (EMP), Semielaborados (SEM) y Producto Terminado (PT)
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+            Catálogo Maestro de Artículos
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Administración de Materias Primas (MP), Empaques (EMP), Semielaborados (SEM) y Producto Terminado (PT).
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={fetchItems}
             disabled={loading}
-            className="p-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-            title="Recargar datos"
+            title="Recargar catálogo"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-400" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-500" : ""}`} />
           </button>
           <button
             onClick={handleOpenCreate}
@@ -241,7 +206,7 @@ export default function ItemsPage() {
       </div>
 
       {/* Pestañas de Categoría y Filtros */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
         <div className="flex flex-wrap items-center gap-1.5">
           {[
             { id: "ALL", label: "Todos" },
@@ -253,10 +218,10 @@ export default function ItemsPage() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
                 selectedCategory === cat.id
-                  ? "bg-amber-600 text-white shadow-sm"
-                  : "bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white"
+                  ? "bg-amber-500 text-white shadow-xs"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
               }`}
             >
               {cat.label}
@@ -269,30 +234,33 @@ export default function ItemsPage() {
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar artículo..."
+              placeholder="Buscar por código o nombre..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-950 border border-slate-800 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
-          <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+          <div
+            onClick={() => setActiveOnly(!activeOnly)}
+            className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none"
+          >
             <input
               type="checkbox"
               checked={activeOnly}
               onChange={(e) => setActiveOnly(e.target.checked)}
-              className="rounded border-slate-700 text-amber-500 focus:ring-amber-500/20 bg-slate-950"
+              className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/20 bg-slate-100 dark:bg-slate-900"
             />
             <span>Activos</span>
-          </label>
+          </div>
         </div>
       </div>
 
       {/* Tabla DataGrid */}
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-lg">
+      <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#161821] overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-950/80 text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800">
+            <thead className="bg-slate-50 dark:bg-[#11131a] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3.5">Código</th>
                 <th className="px-4 py-3.5">Nombre</th>
@@ -304,73 +272,71 @@ export default function ItemsPage() {
                 <th className="px-4 py-3.5 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
               {loading ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-amber-400 mb-2" />
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-amber-500 mb-2" />
                     <span>Cargando artículos...</span>
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
-                    <Boxes className="w-8 h-8 mx-auto text-slate-600 mb-2" />
+                    <Boxes className="w-8 h-8 mx-auto text-slate-400 mb-2" />
                     <span>No se encontraron artículos con los filtros aplicados.</span>
                   </td>
                 </tr>
               ) : (
                 filteredItems.map((i) => (
-                  <tr key={i.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-amber-400">
-                      <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
+                  <tr key={i.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-4 py-3 font-mono font-bold text-amber-600 dark:text-amber-400">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                         {i.code}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-white">{i.name}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{i.name}</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold border ${getCategoryBadge(
+                        className={`inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold border ${getCategoryBadge(
                           i.category
                         )}`}
                       >
                         {i.category}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-300 font-mono">{i.unitOfMeasure}</td>
-                    <td className="px-4 py-3 font-mono text-emerald-400 font-medium">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300 font-mono">{i.unitOfMeasure}</td>
+                    <td className="px-4 py-3 font-mono text-emerald-600 dark:text-emerald-400 font-medium">
                       C$ {Number(i.cost).toFixed(2)}
                     </td>
-                    <td className="px-4 py-3 font-mono text-slate-400">
+                    <td className="px-4 py-3 font-mono text-slate-500 dark:text-slate-400">
                       C$ {Number(i.standardCost).toFixed(2)}
                     </td>
                     <td className="px-4 py-3">
                       {i.isActive ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                           <CheckCircle2 className="w-3 h-3" /> Activo
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium rounded-full bg-slate-500/10 text-slate-500 dark:text-slate-400 border border-slate-500/20">
                           <XCircle className="w-3 h-3" /> Inactivo
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <button
+                        <ActionTooltipButton
+                          icon={Edit2}
+                          tooltip="Editar Artículo"
                           onClick={() => handleOpenEdit(i)}
-                          title="Editar artículo"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
+                          variant="warning"
+                        />
+                        <ActionTooltipButton
+                          icon={Trash2}
+                          tooltip="Eliminar / Desactivar Artículo"
                           onClick={() => handleDelete(i)}
-                          title="Eliminar o desactivar artículo"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                          variant="danger"
+                        />
                       </div>
                     </td>
                   </tr>
@@ -381,7 +347,7 @@ export default function ItemsPage() {
         </div>
       </div>
 
-      {/* Modal Formulario */}
+      {/* Modal Formulario: Sin etiquetas <label> */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -390,35 +356,31 @@ export default function ItemsPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {modalError && (
-            <div className="flex items-center gap-2 p-3 text-xs rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 dark:text-rose-400">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{modalError}</span>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Código <span className="text-amber-400">*</span>
-              </label>
+            <div className="relative">
+              <Tag className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 required
-                placeholder="ej. PT-001 o MP-001"
+                placeholder="Código del Artículo (ej. PT-001) *"
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white font-mono uppercase focus:outline-none focus:border-amber-500"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Categoría <span className="text-amber-400">*</span>
-              </label>
+            <div className="relative">
+              <Layers className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
                 <option value="MP">Materia Prima (MP)</option>
                 <option value="EMP">Empaque (EMP)</option>
@@ -428,101 +390,96 @@ export default function ItemsPage() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Nombre del Artículo <span className="text-amber-400">*</span>
-            </label>
+          <div className="relative">
+            <Boxes className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
             <input
               type="text"
               required
-              placeholder="ej. Harina de Café ReCoffee 500g"
+              placeholder="Nombre comercial / técnico del artículo *"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-500"
+              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Unidad Medida <span className="text-amber-400">*</span>
-              </label>
+            <div className="relative">
+              <Scale className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 required
-                placeholder="kg, bolsa, unidad"
+                placeholder="U.M. (kg, bolsa, und) *"
                 value={formData.unitOfMeasure}
                 onChange={(e) => setFormData({ ...formData, unitOfMeasure: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-500"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Costo Unit. (C$)
-              </label>
+            <div className="relative">
+              <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
                 type="number"
                 step="0.01"
                 min="0"
+                placeholder="Costo Unit. (C$)"
                 value={formData.cost}
                 onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-500"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1">
-                Costo Estándar (C$)
-              </label>
+            <div className="relative">
+              <Coins className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
               <input
                 type="number"
                 step="0.01"
                 min="0"
+                placeholder="Costo Estándar (C$)"
                 value={formData.standardCost}
                 onChange={(e) =>
                   setFormData({ ...formData, standardCost: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-500"
+                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1">
-              Descripción / Especificaciones
-            </label>
+          <div className="relative">
+            <FileText className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
             <textarea
               rows={2}
-              placeholder="Detalles sobre el material, especificaciones técnicas..."
+              placeholder="Descripción y especificaciones técnicas del artículo..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 text-xs bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-amber-500"
+              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
             />
           </div>
 
-          <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+          <div
+            onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+            className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer pt-1 select-none"
+          >
             <input
               type="checkbox"
               checked={formData.isActive}
               onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-              className="rounded border-slate-700 text-amber-500 focus:ring-amber-500/20 bg-slate-950"
+              className="rounded border-slate-300 dark:border-slate-700 text-amber-500 focus:ring-amber-500/20 bg-slate-100 dark:bg-slate-900"
             />
-            <span>Artículo disponible y activo</span>
-          </label>
+            <span>Artículo disponible y activo para operaciones</span>
+          </div>
 
-          <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-xs rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors"
+              className="px-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg text-white bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-md shadow-amber-600/30 transition-all disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl text-white bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-md shadow-amber-600/30 transition-all disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               <span>{editingItem ? "Guardar Cambios" : "Crear Artículo"}</span>
