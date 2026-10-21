@@ -23,9 +23,22 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
+
+    // Desactivar bloqueo por intentos fallidos temporalmente para pruebas locales
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.Zero;
+    options.Lockout.MaxFailedAccessAttempts = 100;
+    options.Lockout.AllowedForNewUsers = false;
 })
 .AddEntityFrameworkStores<ReCoffeeDbContext>()
 .AddDefaultTokenProviders();
+
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    // Desactivar bloqueo por intentos fallidos temporalmente
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.Zero;
+    options.Lockout.MaxFailedAccessAttempts = 100;
+    options.Lockout.AllowedForNewUsers = false;
+});
 
 // 3. Services Injection
 builder.Services.AddSingleton<ICryptoService, CryptoService>();
