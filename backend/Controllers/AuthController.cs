@@ -19,6 +19,7 @@ public class AuthController : ControllerBase
     private readonly ITokenService _tokenService;
     private readonly ICryptoService _cryptoService;
     private readonly ReCoffeeDbContext _context;
+    private readonly IWebHostEnvironment _env;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
@@ -27,6 +28,7 @@ public class AuthController : ControllerBase
         ITokenService tokenService,
         ICryptoService cryptoService,
         ReCoffeeDbContext context,
+        IWebHostEnvironment env,
         ILogger<AuthController> logger)
     {
         _userManager = userManager;
@@ -34,6 +36,7 @@ public class AuthController : ControllerBase
         _tokenService = tokenService;
         _cryptoService = cryptoService;
         _context = context;
+        _env = env;
         _logger = logger;
     }
 
@@ -98,11 +101,13 @@ public class AuthController : ControllerBase
         var token = _tokenService.GenerateToken(user, roles);
 
         // Configuración estricta de Cookie de sesión JWT (HttpOnly, Secure condicional HTTPS/dev, SameSite)
+        // Configuración de Cookie JWT: Secure=false y SameSite=Lax exclusivamente en desarrollo para soporte Chromium
+        bool isDev = _env.IsDevelopment();
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = Request.IsHttps,
-            SameSite = Request.IsHttps ? SameSiteMode.Strict : SameSiteMode.Lax,
+            Secure = !isDev,
+            SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.Strict,
             Expires = DateTimeOffset.UtcNow.AddDays(7),
             Path = "/"
         };
@@ -250,11 +255,12 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public IActionResult Logout()
     {
+        bool isDev = _env.IsDevelopment();
         Response.Cookies.Delete("recoffee_jwt", new CookieOptions
         {
             HttpOnly = true,
-            Secure = Request.IsHttps,
-            SameSite = Request.IsHttps ? SameSiteMode.Strict : SameSiteMode.Lax,
+            Secure = !isDev,
+            SameSite = isDev ? SameSiteMode.Lax : SameSiteMode.Strict,
             Path = "/"
         });
 

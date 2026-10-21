@@ -15,7 +15,7 @@ export default function MasterLayout({ children }: MasterLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
-  const isAuthPage = pathname === "/login";
+  const isAuthPage = pathname === "/login" || pathname.startsWith("/auth");
 
   if (isAuthPage) {
     return (

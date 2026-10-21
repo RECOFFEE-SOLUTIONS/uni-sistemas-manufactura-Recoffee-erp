@@ -26,15 +26,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(storedUser);
       }
       try {
-        // Valida la sesión activa a través de la Cookie HttpOnly segura
+        // Valida la sesión activa a través de la Cookie HttpOnly segura en backend
         const freshUser = await authService.getMe();
         if (freshUser) {
           setUser(freshUser);
-        } else if (!storedUser) {
+        } else {
+          // Si el backend no validó la cookie, resetear estado en cliente sin redirigir de inmediato
+          authService.logout(false);
           setUser(null);
         }
       } catch {
-        // En caso de 401 la sesión no está activa
+        // 401: la sesión HttpOnly no está activa
+        authService.logout(false);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -55,13 +59,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    authService.logout();
+    authService.logout(true);
     setUser(null);
   };
 
   const refreshUser = async () => {
     const u = await authService.getMe();
-    if (u) setUser(u);
+    if (u) {
+      setUser(u);
+    } else {
+      setUser(null);
+    }
   };
 
   return (
