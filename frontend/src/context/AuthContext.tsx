@@ -25,17 +25,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (storedUser) {
         setUser(storedUser);
       }
-      if (authService.getToken()) {
-        try {
-          const freshUser = await authService.getMe();
-          if (freshUser) {
-            setUser(freshUser);
-          }
-        } catch {
-          // Si falla, el interceptor limpiará el token si es 401
+      try {
+        // Valida la sesión activa a través de la Cookie HttpOnly segura
+        const freshUser = await authService.getMe();
+        if (freshUser) {
+          setUser(freshUser);
+        } else if (!storedUser) {
+          setUser(null);
         }
+      } catch {
+        // En caso de 401 la sesión no está activa
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initAuth();

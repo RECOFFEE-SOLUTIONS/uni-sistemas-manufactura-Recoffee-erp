@@ -1,58 +1,52 @@
 import apiClient from "./api";
 import { LoginResponse, User } from "@/types";
-
-function setCookie(name: string, val: string, days: number = 7) {
-  if (typeof document === "undefined") return;
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(val)}; expires=${expires}; path=/; SameSite=Lax`;
-}
-
-function deleteCookie(name: string) {
-  if (typeof document === "undefined") return;
-  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-}
-
-function getCookie(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-  return match ? decodeURIComponent(match[2]) : null;
-}
+import { encryptPasswordAsymmetric } from "./crypto";
 
 export const authService = {
+  /**
+   * Inicia sesión encriptando asimétricamente la contraseña en el cliente.
+   * El token JWT se almacena exclusivamente en una Cookie HttpOnly del navegador,
+   * sin tocar LocalStorage ni SessionStorage.
+   */
   async login(username: string, password: string): Promise<LoginResponse> {
+    const encryptedPassword = await encryptPasswordAsymmetric(password);
+
     const response = await apiClient.post<LoginResponse>("/api/auth/login", {
       username,
-      password,
+      password: encryptedPassword,
     });
-    if (response.data.token) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("recoffee_token", response.data.token);
-        localStorage.setItem("recoffee_user", JSON.stringify(response.data.user));
-        setCookie("recoffee_token", response.data.token, 7);
-      }
+
+    if (response.data.user && typeof window !== "undefined") {
+      // Guardar únicamente perfil no sensible para hidratación de interfaz
+      localStorage.setItem("recoffee_user_profile", JSON.stringify(response.data.user));
     }
+
     return response.data;
   },
 
-  logout(): void {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("recoffee_token");
-      localStorage.removeItem("recoffee_user");
-      deleteCookie("recoffee_token");
-      window.location.href = "/login";
+  /**
+   * Cierra la sesión en el backend para revocar/eliminar la Cookie HttpOnly
+   */
+  async logout(): Promise<void> {
+    try {
+      await apiClient.post("/api/auth/logout");
+    } catch {
+      // Silencioso en caso de error de red
+    } finally {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("recoffee_user_profile");
+        // Asegurar limpieza de legacy keys si existían
+        localStorage.removeItem("recoffee_token");
+        localStorage.removeItem("recoffee_user");
+        sessionStorage.clear();
+        window.location.href = "/login";
+      }
     }
-  },
-
-  getToken(): string | null {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("recoffee_token") || getCookie("recoffee_token");
-    }
-    return null;
   },
 
   getUser(): User | null {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("recoffee_user");
+      const stored = localStorage.getItem("recoffee_user_profile");
       if (stored) {
         try {
           return JSON.parse(stored) as User;
@@ -68,7 +62,7 @@ export const authService = {
     try {
       const response = await apiClient.get<User>("/api/auth/me");
       if (response.data && typeof window !== "undefined") {
-        localStorage.setItem("recoffee_user", JSON.stringify(response.data));
+        localStorage.setItem("recoffee_user_profile", JSON.stringify(response.data));
       }
       return response.data;
     } catch {
@@ -77,6 +71,6 @@ export const authService = {
   },
 
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    return !!this.getUser();
   },
 };
