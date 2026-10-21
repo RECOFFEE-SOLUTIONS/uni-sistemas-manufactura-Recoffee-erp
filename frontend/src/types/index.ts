@@ -10,6 +10,27 @@ export interface LoginResponse {
   token?: string;
   message?: string;
   user: User;
+  mustChangePassword?: boolean;
+}
+
+export interface UserSummary {
+  id: string;
+  username: string;
+  email: string;
+  name?: string;
+  roles: string[];
+  mustChangePassword: boolean;
+  allowedModules: string[];
+}
+
+export interface AccessLogItem {
+  id: number;
+  timestamp: string;
+  ipAddress: string;
+  username: string;
+  success: boolean;
+  failureReason?: string | null;
+  userAgent?: string | null;
 }
 
 export interface ApiStatus {

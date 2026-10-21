@@ -10,7 +10,8 @@ interface MasterLayoutProps {
 }
 
 export default function MasterLayout({ children }: MasterLayoutProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  // Estado inicial del Sidebar colapsado por defecto (WI-8.01)
+  const [collapsed, setCollapsed] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
@@ -26,7 +27,7 @@ export default function MasterLayout({ children }: MasterLayoutProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0c0d12] text-slate-800 dark:text-slate-100 flex transition-colors duration-200">
-      {/* Sidebar Minimalista Colapsible */}
+      {/* Sidebar Minimalista Colapsado por Defecto */}
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -40,7 +41,13 @@ export default function MasterLayout({ children }: MasterLayoutProps) {
           collapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
-        <Navbar onToggleSidebar={() => setMobileOpen((prev) => !prev)} />
+        <Navbar onToggleSidebar={() => {
+          if (window.innerWidth < 1024) {
+            setMobileOpen((prev) => !prev);
+          } else {
+            setCollapsed((prev) => !prev);
+          }
+        }} />
         <main className="p-4 md:p-8 flex-1 overflow-x-hidden">
           {children}
         </main>
