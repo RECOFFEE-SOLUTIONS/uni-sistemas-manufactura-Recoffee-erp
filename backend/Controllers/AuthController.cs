@@ -69,8 +69,12 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Usuario y contraseña son requeridos." });
         }
 
-        var user = await _userManager.FindByNameAsync(request.Username)
-                   ?? await _userManager.FindByEmailAsync(request.Username);
+        var searchKey = request.Username.Trim();
+        var user = await _userManager.FindByNameAsync(searchKey)
+                   ?? await _userManager.FindByEmailAsync(searchKey)
+                   ?? await _userManager.Users.FirstOrDefaultAsync(u =>
+                       (u.UserName != null && u.UserName.ToLower() == searchKey.ToLower()) ||
+                       (u.Email != null && u.Email.ToLower() == searchKey.ToLower()));
 
         if (user == null)
         {
@@ -140,29 +144,38 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Ingrese su usuario o correo registrado." });
         }
 
-        var user = await _userManager.FindByNameAsync(request.EmailOrUsername)
-                   ?? await _userManager.FindByEmailAsync(request.EmailOrUsername);
+        var searchKey = request.EmailOrUsername.Trim();
+        var user = await _userManager.FindByNameAsync(searchKey)
+                   ?? await _userManager.FindByEmailAsync(searchKey)
+                   ?? await _userManager.Users.FirstOrDefaultAsync(u =>
+                       (u.UserName != null && u.UserName.ToLower() == searchKey.ToLower()) ||
+                       (u.Email != null && u.Email.ToLower() == searchKey.ToLower()));
 
         if (user == null)
         {
-            // Mensaje genérico por seguridad
-            return Ok(new ForgotPasswordResponse(
-                "Si la cuenta existe, se ha generado una clave temporal para el restablecimiento.",
-                null,
-                null
-            ));
+            return NotFound(new { message = $"El usuario o correo '{searchKey}' no fue encontrado en el sistema." });
         }
 
-        // Generar contraseña temporal
-        string tempPassword = "Reset@" + Guid.NewGuid().ToString("N").Substring(0, 8) + "!";
+        // Desactivar cualquier envío SMTP y generar contraseña temporal automáticamente
+        string tempPassword = "Recoffee.2026!";
+
+        // Resetear la contraseña del usuario en ASP.NET Core Identity
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
         var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, tempPassword);
 
         if (!resetResult.Succeeded)
         {
-            return BadRequest(new { message = "No se pudo restablecer la contraseña en este momento." });
+            // Forzar actualización si hay token vencido o política previa
+            await _userManager.RemovePasswordAsync(user);
+            var addResult = await _userManager.AddPasswordAsync(user, tempPassword);
+            if (!addResult.Succeeded)
+            {
+                var err = string.Join(", ", addResult.Errors.Select(e => e.Description));
+                return BadRequest(new { message = $"No se pudo actualizar la contraseña: {err}" });
+            }
         }
 
+        // Actualizar perfil de seguridad: forzar MustChangePassword = true
         var profile = await _context.UserSecurityProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
         if (profile == null)
         {
@@ -177,13 +190,16 @@ public class AuthController : ControllerBase
         await _context.SaveChangesAsync();
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        await RecordAccessLog(ip, user.UserName ?? "system", true, "Generación de contraseña temporal vía Olvidé mi clave", Request.Headers.UserAgent.ToString());
+        await RecordAccessLog(ip, user.UserName ?? searchKey, true, "Clave temporal generada vía Olvidé mi clave", Request.Headers.UserAgent.ToString());
 
-        return Ok(new ForgotPasswordResponse(
-            "Se ha generado una contraseña temporal con éxito. Deberá cambiarla al iniciar sesión.",
-            tempPassword,
-            resetToken
-        ));
+        return Ok(new
+        {
+            message = "Contraseña temporal generada exitosamente.",
+            temporaryPassword = tempPassword,
+            resetToken = resetToken,
+            username = user.UserName,
+            email = user.Email
+        });
     }
 
     /// <summary>
