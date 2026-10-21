@@ -156,26 +156,27 @@ public class AuthController : ControllerBase
             return NotFound(new { message = $"El usuario o correo '{searchKey}' no fue encontrado en el sistema." });
         }
 
-        // Desactivar cualquier envío SMTP y generar contraseña temporal automáticamente
+        // NO enviar correos electrónicos (cero dependencias SMTP). Generar contraseña temporal localmente.
         string tempPassword = "Recoffee.2026!";
 
-        // Resetear la contraseña del usuario en ASP.NET Core Identity
-        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, tempPassword);
-
-        if (!resetResult.Succeeded)
+        // Forzar cambio inmediato de contraseña en ASP.NET Core Identity
+        var hasPassword = await _userManager.HasPasswordAsync(user);
+        if (hasPassword)
         {
-            // Forzar actualización si hay token vencido o política previa
             await _userManager.RemovePasswordAsync(user);
-            var addResult = await _userManager.AddPasswordAsync(user, tempPassword);
-            if (!addResult.Succeeded)
-            {
-                var err = string.Join(", ", addResult.Errors.Select(e => e.Description));
-                return BadRequest(new { message = $"No se pudo actualizar la contraseña: {err}" });
-            }
+        }
+        var addResult = await _userManager.AddPasswordAsync(user, tempPassword);
+        if (!addResult.Succeeded)
+        {
+            var err = string.Join(", ", addResult.Errors.Select(e => e.Description));
+            return BadRequest(new { message = $"No se pudo actualizar la contraseña: {err}" });
         }
 
-        // Actualizar perfil de seguridad: forzar MustChangePassword = true
+        // Desbloquear usuario si acumuló intentos fallidos
+        await _userManager.SetLockoutEndDateAsync(user, null);
+        await _userManager.ResetAccessFailedCountAsync(user);
+
+        // Actualizar campo MustChangePassword = true
         var profile = await _context.UserSecurityProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
         if (profile == null)
         {
@@ -185,18 +186,17 @@ public class AuthController : ControllerBase
         profile.MustChangePassword = true;
         profile.IsTemporaryPassword = true;
         profile.TemporaryPassword = tempPassword;
-        profile.ResetToken = resetToken;
-        profile.ResetTokenExpiresAt = DateTime.UtcNow.AddHours(24);
+        profile.LastPasswordChangeDate = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         await RecordAccessLog(ip, user.UserName ?? searchKey, true, "Clave temporal generada vía Olvidé mi clave", Request.Headers.UserAgent.ToString());
 
+        // Retornar Ok() con la contraseña temporal generada en el JSON
         return Ok(new
         {
             message = "Contraseña temporal generada exitosamente.",
             temporaryPassword = tempPassword,
-            resetToken = resetToken,
             username = user.UserName,
             email = user.Email
         });
