@@ -22,6 +22,14 @@ export const authService = {
       document.cookie = "recoffee_session=1; path=/; max-age=604800; SameSite=Lax";
       // Guardar perfil no sensible para hidratación de interfaz
       localStorage.setItem("recoffee_user_profile", JSON.stringify(response.data.user));
+
+      if (response.data.mustChangePassword) {
+        document.cookie = "recoffee_must_change=1; path=/; max-age=604800; SameSite=Lax";
+        localStorage.setItem("recoffee_must_change_pwd", "true");
+      } else {
+        document.cookie = "recoffee_must_change=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        localStorage.removeItem("recoffee_must_change_pwd");
+      }
     }
 
     return response.data;
@@ -38,13 +46,47 @@ export const authService = {
     } finally {
       if (typeof window !== "undefined") {
         document.cookie = "recoffee_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        document.cookie = "recoffee_must_change=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
         localStorage.removeItem("recoffee_user_profile");
+        localStorage.removeItem("recoffee_must_change_pwd");
         localStorage.removeItem("recoffee_token");
         localStorage.removeItem("recoffee_user");
         sessionStorage.clear();
         window.location.href = "/login";
       }
     }
+  },
+
+  /**
+   * Cambia la contraseña del usuario autenticado (requerido cuando mustChangePassword es true).
+   */
+  async changePassword(newPassword: string, currentPassword?: string, resetToken?: string): Promise<{ message: string }> {
+    const encryptedNewPassword = await encryptPasswordAsymmetric(newPassword);
+    const encryptedCurrent = currentPassword ? await encryptPasswordAsymmetric(currentPassword) : undefined;
+
+    const response = await apiClient.post<{ message: string }>("/api/auth/change-password", {
+      currentPassword: encryptedCurrent,
+      newPassword: encryptedNewPassword,
+      resetToken,
+    });
+
+    if (typeof window !== "undefined") {
+      document.cookie = "recoffee_must_change=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      localStorage.removeItem("recoffee_must_change_pwd");
+    }
+
+    return response.data;
+  },
+
+  /**
+   * Solicita una contraseña temporal o token de recuperación vía Olvidé mi clave.
+   */
+  async forgotPassword(emailOrUsername: string): Promise<{ message: string; temporaryPassword?: string; resetToken?: string }> {
+    const response = await apiClient.post<{ message: string; temporaryPassword?: string; resetToken?: string }>(
+      "/api/auth/forgot-password",
+      { emailOrUsername }
+    );
+    return response.data;
   },
 
   getUser(): User | null {

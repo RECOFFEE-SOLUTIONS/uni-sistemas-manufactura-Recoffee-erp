@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   Sun,
   Moon,
+  Users,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/context/AuthContext";
@@ -116,6 +117,12 @@ export default function Sidebar({
         { name: "Dashboard KPIs & OEE", href: "/iiot/kpis", icon: LayoutDashboard },
       ],
     },
+    {
+      title: "M8: Administración",
+      items: [
+        { name: "Gestión de Usuarios", href: "/admin/users", icon: Users },
+      ],
+    },
   ];
 
   return (
@@ -164,7 +171,7 @@ export default function Sidebar({
                     <button
                       type="button"
                       onClick={() => toggleSection(section.title)}
-                      className="flex items-center justify-between w-full px-2 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                      className="flex items-center justify-between w-full px-2 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
                     >
                       <span className="truncate">{section.title}</span>
                       {isSectionCollapsed ? (
@@ -227,7 +234,7 @@ export default function Sidebar({
             type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             title="Alternar Tema Claro / Oscuro"
-            className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${
               collapsed ? "justify-center" : ""
             }`}
           >
@@ -248,7 +255,7 @@ export default function Sidebar({
             type="button"
             onClick={() => setCollapsed(!collapsed)}
             title={collapsed ? "Expandir Menú" : "Colapsar Menú"}
-            className="w-full hidden lg:flex items-center justify-center py-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/40 rounded-lg transition-colors"
+            className="w-full hidden lg:flex items-center justify-center py-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/40 rounded-lg transition-colors cursor-pointer"
           >
             {collapsed ? (
               <ChevronRight className="w-4 h-4" />

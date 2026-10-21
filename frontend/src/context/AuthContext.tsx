@@ -1,14 +1,14 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { User } from "@/types";
+import { LoginResponse, User } from "@/types";
 import { authService } from "@/lib/auth";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<LoginResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -43,11 +43,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string): Promise<LoginResponse> => {
     setIsLoading(true);
     try {
       const res = await authService.login(username, password);
       setUser(res.user);
+      return res;
     } finally {
       setIsLoading(false);
     }

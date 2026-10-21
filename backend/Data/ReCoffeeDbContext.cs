@@ -33,6 +33,9 @@ public class ReCoffeeDbContext : IdentityDbContext
     public DbSet<QualityInspection> QualityInspections { get; set; } = null!;
     public DbSet<NonConformanceReport> NonConformanceReports { get; set; } = null!;
     public DbSet<IiotTelemetryLog> IiotTelemetryLogs { get; set; } = null!;
+    public DbSet<AccessLog> AccessLogs { get; set; } = null!;
+    public DbSet<UserModulePermission> UserModulePermissions { get; set; } = null!;
+    public DbSet<UserSecurityProfile> UserSecurityProfiles { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
