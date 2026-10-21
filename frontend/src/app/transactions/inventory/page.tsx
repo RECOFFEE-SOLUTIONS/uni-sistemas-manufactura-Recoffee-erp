@@ -4,22 +4,93 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
   Boxes,
   Search,
-  Filter,
   RefreshCw,
-  Loader2,
   ArrowDownLeft,
   ArrowUpRight,
   Repeat,
   SlidersHorizontal,
   Layers,
-  Calendar,
   Building2,
   Tag,
   FileSpreadsheet,
+  Wallet,
+  TrendingUp,
+  AlertTriangle,
+  RotateCw,
+  PackageCheck,
+  Calendar,
+  XCircle,
+  FileText,
 } from "lucide-react";
 import apiClient from "@/lib/api";
 import { InventoryTransaction, InventoryStock, Warehouse, Item } from "@/types";
 import { useToast } from "@/context/ToastContext";
+
+// Skeleton Loader Component
+function KardexSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* Metrics Skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="p-6 rounded-2xl bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 shadow-xs"
+          >
+            <div className="flex items-center justify-between">
+              <div className="h-3 w-28 bg-slate-200 dark:bg-slate-800 rounded"></div>
+              <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-800"></div>
+            </div>
+            <div className="mt-4">
+              <div className="h-8 w-32 bg-slate-200 dark:bg-slate-800 rounded mb-2"></div>
+              <div className="h-3 w-40 bg-slate-100 dark:bg-slate-800/60 rounded"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter Omnibar Skeleton */}
+      <div className="h-14 bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 rounded-2xl"></div>
+
+      {/* Table Skeleton */}
+      <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#161821] p-6 space-y-4">
+        <div className="h-8 bg-slate-200 dark:bg-slate-800/60 rounded-xl w-full"></div>
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div
+            key={i}
+            className="h-12 bg-slate-100 dark:bg-slate-800/30 rounded-lg w-full"
+          ></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Empty State Component
+function KardexEmptyState({ onReset }: { onReset?: () => void }) {
+  return (
+    <div className="p-16 flex flex-col items-center justify-center text-center">
+      <div className="w-24 h-24 mb-6 rounded-3xl bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+        <Boxes className="w-12 h-12 stroke-[1.5]" />
+      </div>
+      <h3 className="font-heading text-lg font-bold text-slate-900 dark:text-slate-100 mb-2">
+        No se encontraron movimientos registrados
+      </h3>
+      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-6 leading-relaxed">
+        No hay registros que coincidan con los criterios de búsqueda o filtros seleccionados en el Kardex PEPS.
+      </p>
+      {onReset && (
+        <button
+          onClick={onReset}
+          className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-sm shadow-sm transition-all duration-150 active:scale-95"
+        >
+          <RotateCw className="w-4 h-4" />
+          Restablecer Filtros
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function InventoryKardexPage() {
   const { showToast } = useToast();
@@ -32,10 +103,10 @@ export default function InventoryKardexPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters
+  // Filters (Zero labels - strictly placeholder & icons)
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedItemId, setSelectedItemId] = useState<string>("ALL");
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<string>("ALL");
-  const [lotFilter, setLotFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
 
   const fetchData = async () => {
@@ -62,6 +133,13 @@ export default function InventoryKardexPage() {
     fetchData();
   }, []);
 
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedItemId("ALL");
+    setSelectedWarehouseId("ALL");
+    setTypeFilter("ALL");
+  };
+
   // Filtered Kardex Transactions
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -70,338 +148,424 @@ export default function InventoryKardexPage() {
         selectedWarehouseId === "ALL" ||
         tx.sourceWarehouseId === Number(selectedWarehouseId) ||
         tx.destinationWarehouseId === Number(selectedWarehouseId);
-      const matchesLot =
-        !lotFilter ||
-        (tx.lotNumber && tx.lotNumber.toLowerCase().includes(lotFilter.toLowerCase())) ||
-        (tx.referenceNumber && tx.referenceNumber.toLowerCase().includes(lotFilter.toLowerCase()));
+      const matchesSearch =
+        !searchTerm ||
+        (tx.lotNumber && tx.lotNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (tx.referenceNumber && tx.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (tx.itemCode && tx.itemCode.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (tx.itemName && tx.itemName.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesType = typeFilter === "ALL" || tx.transactionType === typeFilter;
 
-      return matchesItem && matchesWarehouse && matchesLot && matchesType;
+      return matchesItem && matchesWarehouse && matchesSearch && matchesType;
     });
-  }, [transactions, selectedItemId, selectedWarehouseId, lotFilter, typeFilter]);
+  }, [transactions, selectedItemId, selectedWarehouseId, searchTerm, typeFilter]);
 
   // Filtered Current Stocks
   const filteredStocks = useMemo(() => {
     return stocks.filter((st) => {
       const matchesItem = selectedItemId === "ALL" || st.itemId === Number(selectedItemId);
-      const matchesWarehouse = selectedWarehouseId === "ALL" || st.warehouseId === Number(selectedWarehouseId);
-      const matchesLot =
-        !lotFilter || (st.lotNumber && st.lotNumber.toLowerCase().includes(lotFilter.toLowerCase()));
+      const matchesWarehouse =
+        selectedWarehouseId === "ALL" || st.warehouseId === Number(selectedWarehouseId);
+      const matchesSearch =
+        !searchTerm ||
+        (st.lotNumber && st.lotNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (st.itemCode && st.itemCode.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (st.itemName && st.itemName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-      return matchesItem && matchesWarehouse && matchesLot;
+      return matchesItem && matchesWarehouse && matchesSearch;
     });
-  }, [stocks, selectedItemId, selectedWarehouseId, lotFilter]);
+  }, [stocks, selectedItemId, selectedWarehouseId, searchTerm]);
+
+  // Metric Computations
+  const totalValuation = useMemo(() => {
+    return stocks.reduce((acc, st) => {
+      const it = items.find((i) => i.id === st.itemId);
+      const cost = it ? it.standardCost : 0;
+      return acc + st.quantity * cost;
+    }, 0);
+  }, [stocks, items]);
+
+  const [totalMovimientosHoy, setTotalMovimientosHoy] = useState(0);
+
+  useEffect(() => {
+    if (transactions.length > 0) {
+      const today = new Date().toDateString();
+      setTotalMovimientosHoy(
+        transactions.filter((t) => new Date(t.transactionDate).toDateString() === today).length
+      );
+    }
+  }, [transactions]);
+
+  const stockPT = useMemo(
+    () =>
+      stocks
+        .filter((s) => s.warehouseCode === "ALM-003")
+        .reduce((acc, s) => acc + s.quantity, 0),
+    [stocks]
+  );
+
+  const stockWIP = useMemo(
+    () =>
+      stocks
+        .filter((s) => s.warehouseCode === "ALM-002")
+        .reduce((acc, s) => acc + s.quantity, 0),
+    [stocks]
+  );
 
   const getTransactionBadge = (type: string) => {
     switch (type) {
       case "ENTRADA_COMPRA":
         return {
           icon: ArrowDownLeft,
-          bg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+          bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
           label: "Entrada Compra",
         };
       case "ENTRADA_PRODUCCION":
         return {
           icon: ArrowDownLeft,
-          bg: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-          label: "Entrada Producción",
+          bg: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+          label: "Entrada PT",
         };
       case "SALIDA_PRODUCCION":
       case "SALIDA_WIP":
         return {
           icon: ArrowUpRight,
-          bg: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-          label: type === "SALIDA_WIP" ? "Salida WIP" : "Salida a Producción",
+          bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
+          label: type === "SALIDA_WIP" ? "Salida WIP" : "Salida Producción",
         };
       case "SALIDA_VENTA":
         return {
           icon: ArrowUpRight,
-          bg: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+          bg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
           label: "Salida Venta (FIFO)",
         };
       case "TRANSFERENCIA":
         return {
           icon: Repeat,
-          bg: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+          bg: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
           label: "Transferencia",
         };
       default:
         return {
           icon: SlidersHorizontal,
-          bg: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+          bg: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20",
           label: type,
         };
     }
   };
 
-  // KPI Calculations
-  const totalStockAlm001 = useMemo(
-    () => stocks.filter((s) => s.warehouseCode === "ALM-001").reduce((acc, s) => acc + s.quantity, 0),
-    [stocks]
-  );
-  const totalStockAlm002 = useMemo(
-    () => stocks.filter((s) => s.warehouseCode === "ALM-002").reduce((acc, s) => acc + s.quantity, 0),
-    [stocks]
-  );
-  const totalStockAlm003 = useMemo(
-    () => stocks.filter((s) => s.warehouseCode === "ALM-003").reduce((acc, s) => acc + s.quantity, 0),
-    [stocks]
-  );
-  const totalStockAlm004 = useMemo(
-    () => stocks.filter((s) => s.warehouseCode === "ALM-004").reduce((acc, s) => acc + s.quantity, 0),
-    [stocks]
-  );
-
   return (
-    <div className="space-y-6">
-      {/* Encabezado Principal */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
+      {/* ================= HEADER & STATUS BADGE ================= */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <Boxes className="w-7 h-7 text-amber-500" />
-            Control de Inventario y Kardex Inmutable
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-wider">
+              Ledger NIC 2 / PEPS
+            </span>
+            <span className="text-slate-400 text-xs">•</span>
+            <span className="text-slate-500 dark:text-slate-400 font-mono text-xs">
+              Kardex Inmutable en Tiempo Real
+            </span>
+          </div>
+          <h1 className="font-heading text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            Kardex e Inventario Valorizado
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Auditoría cronológica de transacciones por lote, trazabilidad de entradas/salidas y existencias actuales por almacén.
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+            Trazabilidad continua de transacciones por lote, valoración PEPS/FIFO y existencias físicas multialmacén.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+
+        {/* View Switcher & Refresh Pill */}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center p-1 rounded-2xl bg-slate-200/60 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 shadow-xs">
+            <button
+              onClick={() => setActiveTab("kardex")}
+              className={`px-3.5 py-1.5 rounded-xl font-medium text-xs transition-all duration-150 flex items-center gap-1.5 ${
+                activeTab === "kardex"
+                  ? "bg-white dark:bg-[#161821] text-amber-600 dark:text-amber-400 shadow-xs font-semibold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              Kardex ({transactions.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("stock")}
+              className={`px-3.5 py-1.5 rounded-xl font-medium text-xs transition-all duration-150 flex items-center gap-1.5 ${
+                activeTab === "stock"
+                  ? "bg-white dark:bg-[#161821] text-amber-600 dark:text-amber-400 shadow-xs font-semibold"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Existencias Físicas ({stocks.length})
+            </button>
+          </div>
+
           <button
             onClick={fetchData}
             disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-700 transition"
+            title="Sincronizar y actualizar datos"
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 shadow-xs transition-all active:scale-95 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-amber-500" : ""}`} />
-            Actualizar
           </button>
         </div>
       </div>
 
-      {/* Tarjetas KPI de Existencias por Almacén Oficial */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-          <p className="text-xs text-slate-400 uppercase font-semibold flex items-center justify-between">
-            <span>ALM-001: Materia Prima</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">MP</span>
-          </p>
-          <p className="text-2xl font-bold text-emerald-400 mt-2 font-mono">
-            {totalStockAlm001.toLocaleString("es-NI", { minimumFractionDigits: 2 })} <span className="text-sm text-slate-400 font-normal">kg</span>
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Café, Banano, Papa, Huevo</p>
-        </div>
-
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-          <p className="text-xs text-slate-400 uppercase font-semibold flex items-center justify-between">
-            <span>ALM-002: En Proceso</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">WIP</span>
-          </p>
-          <p className="text-2xl font-bold text-purple-400 mt-2 font-mono">
-            {totalStockAlm002.toLocaleString("es-NI", { minimumFractionDigits: 2 })} <span className="text-sm text-slate-400 font-normal">kg/und</span>
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Subensambles SEM-001</p>
-        </div>
-
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-          <p className="text-xs text-slate-400 uppercase font-semibold flex items-center justify-between">
-            <span>ALM-003: Prod. Terminado</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">PT</span>
-          </p>
-          <p className="text-2xl font-bold text-amber-400 mt-2 font-mono">
-            {totalStockAlm003.toLocaleString("es-NI", { minimumFractionDigits: 2 })} <span className="text-sm text-slate-400 font-normal">bolsas</span>
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Sustrato Compostable PT-001</p>
-        </div>
-
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-          <p className="text-xs text-slate-400 uppercase font-semibold flex items-center justify-between">
-            <span>ALM-004: Empaques</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">EMP</span>
-          </p>
-          <p className="text-2xl font-bold text-blue-400 mt-2 font-mono">
-            {totalStockAlm004.toLocaleString("es-NI", { minimumFractionDigits: 2 })} <span className="text-sm text-slate-400 font-normal">und</span>
-          </p>
-          <p className="text-xs text-slate-500 mt-1">Bolsas Kraft y Etiquetas</p>
-        </div>
-      </div>
-
-      {/* Pestañas de Navegación: Kardex vs Stock Actual */}
-      <div className="flex border-b border-slate-800">
-        <button
-          onClick={() => setActiveTab("kardex")}
-          className={`px-5 py-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition ${
-            activeTab === "kardex"
-              ? "border-amber-500 text-amber-400 bg-slate-900/40"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          Kardex de Transacciones ({filteredTransactions.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("stock")}
-          className={`px-5 py-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition ${
-            activeTab === "stock"
-              ? "border-amber-500 text-amber-400 bg-slate-900/40"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          Existencias Físicas por Lote ({filteredStocks.length})
-        </button>
-      </div>
-
-      {/* Filtros Globales (Lote, Artículo, Almacén, Tipo) */}
-      <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl grid grid-cols-1 sm:grid-cols-4 gap-3">
-        {/* Filtro por Artículo */}
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">
-            Filtrar por Artículo
-          </label>
-          <select
-            value={selectedItemId}
-            onChange={(e) => setSelectedItemId(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-          >
-            <option value="ALL">Todos los Artículos</option>
-            {items.map((i) => (
-              <option key={i.id} value={i.id}>
-                [{i.code}] {i.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Filtro por Almacén */}
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">
-            Filtrar por Almacén
-          </label>
-          <select
-            value={selectedWarehouseId}
-            onChange={(e) => setSelectedWarehouseId(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-          >
-            <option value="ALL">Todos los Almacenes</option>
-            {warehouses.map((w) => (
-              <option key={w.id} value={w.id}>
-                [{w.code}] {w.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Búsqueda por Lote o Referencia */}
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">
-            Buscar Lote o N° Referencia
-          </label>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Ej: LOTE-MP-001..."
-              value={lotFilter}
-              onChange={(e) => setLotFilter(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
-            />
+      {/* ================= TOP METRICS CARDS ================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Metric 1: Total Valuation */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Valoración Total PEPS
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Wallet className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="text-2xl md:text-3xl font-mono font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              C$ {totalValuation.toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Valuación contable estándar</span>
+            </div>
           </div>
         </div>
 
-        {/* Filtro por Tipo de Transacción (visible en Kardex) */}
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">
-            Tipo Transacción
-          </label>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            disabled={activeTab !== "kardex"}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:opacity-50"
-          >
-            <option value="ALL">Todas las Operaciones</option>
-            <option value="ENTRADA_COMPRA">Entrada por Compra</option>
-            <option value="SALIDA_PRODUCCION">Salida a Producción</option>
-            <option value="SALIDA_WIP">Salida de WIP</option>
-            <option value="ENTRADA_PRODUCCION">Entrada Producto Terminado</option>
-            <option value="SALIDA_VENTA">Salida Venta (FIFO)</option>
-            <option value="TRANSFERENCIA">Transferencia</option>
-          </select>
+        {/* Metric 2: Today's Transactions */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Movimientos Registrados
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <RotateCw className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="text-2xl md:text-3xl font-mono font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              {transactions.length} <span className="text-xs text-slate-500 font-normal">total</span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <span>{totalMovimientosHoy} transacciones registradas hoy</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Metric 3: Producto Terminado ALM-003 */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Prod. Terminado (ALM-003)
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <PackageCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="text-2xl md:text-3xl font-mono font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">
+              {stockPT.toLocaleString("es-NI", { minimumFractionDigits: 1 })} <span className="text-xs text-slate-500 font-normal">bolsas</span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <span>Listo para despacho y venta FIFO</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Metric 4: WIP en Proceso ALM-002 */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              En Proceso WIP (ALM-002)
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <Boxes className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="text-2xl md:text-3xl font-mono font-bold text-purple-600 dark:text-purple-400 tracking-tight">
+              {stockWIP.toLocaleString("es-NI", { minimumFractionDigits: 1 })} <span className="text-xs text-slate-500 font-normal">kg</span>
+            </div>
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <span>Etapas de secado, molido y mezclado</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Contenido de la Pestaña Activa */}
-      {loading ? (
-        <div className="p-12 bg-slate-900 border border-slate-800 rounded-xl flex flex-col items-center justify-center gap-3 text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-          <p className="text-sm">Consultando registros del motor de inventario...</p>
-        </div>
-      ) : activeTab === "kardex" ? (
-        /* Vista de Kardex Inmutable */
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
-          {filteredTransactions.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">
-              <FileSpreadsheet className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-              <p className="text-base font-semibold text-slate-300">No hay movimientos en el Kardex</p>
-              <p className="text-sm mt-1">Ajusta los filtros o realiza transacciones de compras, producción o ventas.</p>
+      {/* ================= HYPER-MINIMALIST OMNIBAR FILTER (NO LABELS) ================= */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-[#161821] border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
+          {/* Search SKU / Lote / Referencia */}
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por SKU, lote, referencia..."
+              className="w-full h-10 pl-10 pr-3 rounded-xl bg-slate-50 dark:bg-[#0c0d12] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all"
+            />
+          </div>
+
+          {/* Filter: Almacén (No Label) */}
+          <div className="relative min-w-[180px]">
+            <Building2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <select
+              value={selectedWarehouseId}
+              onChange={(e) => setSelectedWarehouseId(e.target.value)}
+              className="w-full h-10 pl-10 pr-8 rounded-xl bg-slate-50 dark:bg-[#0c0d12] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none cursor-pointer"
+            >
+              <option value="ALL">Todos los Almacenes</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  [{w.code}] {w.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filter: SKU / Artículo (No Label) */}
+          <div className="relative min-w-[190px]">
+            <Tag className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <select
+              value={selectedItemId}
+              onChange={(e) => setSelectedItemId(e.target.value)}
+              className="w-full h-10 pl-10 pr-8 rounded-xl bg-slate-50 dark:bg-[#0c0d12] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none cursor-pointer"
+            >
+              <option value="ALL">Todos los Artículos</option>
+              {items.map((i) => (
+                <option key={i.id} value={i.id}>
+                  [{i.code}] {i.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filter: Tipo de Transacción (No Label, Kardex only) */}
+          {activeTab === "kardex" && (
+            <div className="relative min-w-[180px]">
+              <SlidersHorizontal className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="w-full h-10 pl-10 pr-8 rounded-xl bg-slate-50 dark:bg-[#0c0d12] border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none cursor-pointer"
+              >
+                <option value="ALL">Todas las Operaciones</option>
+                <option value="ENTRADA_COMPRA">Entrada por Compra</option>
+                <option value="SALIDA_PRODUCCION">Salida a Producción</option>
+                <option value="SALIDA_WIP">Salida de WIP</option>
+                <option value="ENTRADA_PRODUCCION">Entrada PT</option>
+                <option value="SALIDA_VENTA">Salida Venta (FIFO)</option>
+                <option value="TRANSFERENCIA">Transferencia</option>
+              </select>
             </div>
+          )}
+        </div>
+
+        {/* Clear Filters Button */}
+        {(searchTerm || selectedItemId !== "ALL" || selectedWarehouseId !== "ALL" || typeFilter !== "ALL") && (
+          <button
+            onClick={handleResetFilters}
+            title="Limpiar todos los filtros"
+            className="h-10 px-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium text-xs flex items-center gap-1.5 transition-all"
+          >
+            <XCircle className="w-4 h-4 text-slate-400" />
+            <span>Limpiar</span>
+          </button>
+        )}
+      </div>
+
+      {/* ================= CONTENT TABLE CONTAINER ================= */}
+      {loading ? (
+        <KardexSkeleton />
+      ) : activeTab === "kardex" ? (
+        /* KARDEX TRANSACTIONS TABLE */
+        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#161821] overflow-hidden shadow-xs">
+          {filteredTransactions.length === 0 ? (
+            <KardexEmptyState onReset={handleResetFilters} />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950/60 uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                  <tr>
-                    <th className="px-3.5 py-3">Fecha</th>
-                    <th className="px-3.5 py-3">Tipo Operación</th>
-                    <th className="px-3.5 py-3">Artículo</th>
-                    <th className="px-3.5 py-3">Origen</th>
-                    <th className="px-3.5 py-3">Destino</th>
-                    <th className="px-3.5 py-3">Lote Involucrado</th>
-                    <th className="px-3.5 py-3 text-right">Cantidad</th>
-                    <th className="px-3.5 py-3 text-right">Costo Unit.</th>
-                    <th className="px-3.5 py-3 text-right">Costo Total</th>
-                    <th className="px-3.5 py-3">Referencia</th>
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-50/80 dark:bg-[#121318] border-b border-slate-200/80 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                    <th className="py-3.5 px-4">Fecha & Hora</th>
+                    <th className="py-3.5 px-4">Tipo Operación</th>
+                    <th className="py-3.5 px-4">SKU / Artículo</th>
+                    <th className="py-3.5 px-4">Origen / Destino</th>
+                    <th className="py-3.5 px-4">Lote Auditado</th>
+                    <th className="py-3.5 px-4 text-right">Cantidad</th>
+                    <th className="py-3.5 px-4 text-right">Costo Unit.</th>
+                    <th className="py-3.5 px-4 text-right">Costo Total</th>
+                    <th className="py-3.5 px-4">Referencia</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
                   {filteredTransactions.map((tx) => {
                     const badge = getTransactionBadge(tx.transactionType);
                     const Icon = badge.icon;
+                    const isOutgoing = tx.transactionType.startsWith("SALIDA");
                     return (
-                      <tr key={tx.id} className="hover:bg-slate-800/40 transition">
-                        <td className="px-3.5 py-2.5 text-slate-400 whitespace-nowrap">
-                          {new Date(tx.transactionDate).toLocaleString("es-NI")}
+                      <tr
+                        key={tx.id}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
+                      >
+                        <td className="py-3 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                          {new Date(tx.transactionDate).toLocaleString("es-NI", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </td>
-                        <td className="px-3.5 py-2.5">
+                        <td className="py-3 px-4 font-sans">
                           <span
-                            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-sans font-medium border ${badge.bg}`}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${badge.bg}`}
                           >
                             <Icon className="w-3 h-3" />
                             {badge.label}
                           </span>
                         </td>
-                        <td className="px-3.5 py-2.5 font-sans">
-                          <div className="font-semibold text-white">[{tx.itemCode}]</div>
-                          <div className="text-[11px] text-slate-400">{tx.itemName}</div>
+                        <td className="py-3 px-4 font-sans">
+                          <div className="font-semibold text-slate-900 dark:text-slate-100 font-mono">
+                            {tx.itemCode}
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[180px]">
+                            {tx.itemName}
+                          </div>
                         </td>
-                        <td className="px-3.5 py-2.5 text-slate-300 font-sans">
-                          {tx.sourceWarehouseCode || "—"}
+                        <td className="py-3 px-4 font-sans text-slate-600 dark:text-slate-300">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-xs">{tx.sourceWarehouseCode || "—"}</span>
+                            <span className="text-slate-400">→</span>
+                            <span className="font-mono text-xs">{tx.destinationWarehouseCode || "—"}</span>
+                          </div>
                         </td>
-                        <td className="px-3.5 py-2.5 text-slate-300 font-sans">
-                          {tx.destinationWarehouseCode || "—"}
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20 text-xs">
+                            {tx.lotNumber || "Sin Lote"}
+                          </span>
                         </td>
-                        <td className="px-3.5 py-2.5 text-amber-300 font-bold whitespace-nowrap">
-                          {tx.lotNumber || "Sin Lote"}
+                        <td className="py-3 px-4 text-right font-bold">
+                          <span className={isOutgoing ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}>
+                            {isOutgoing ? "-" : "+"}
+                            {tx.quantity.toLocaleString("es-NI", { minimumFractionDigits: 2 })}
+                          </span>
                         </td>
-                        <td className="px-3.5 py-2.5 text-right font-bold text-white">
-                          {tx.quantity.toFixed(2)}
-                        </td>
-                        <td className="px-3.5 py-2.5 text-right text-slate-400">
+                        <td className="py-3 px-4 text-right text-slate-500 dark:text-slate-400">
                           C$ {tx.unitCost.toFixed(2)}
                         </td>
-                        <td className="px-3.5 py-2.5 text-right font-bold text-amber-400">
+                        <td className="py-3 px-4 text-right font-bold text-amber-600 dark:text-amber-400">
                           C$ {tx.totalCost.toFixed(2)}
                         </td>
-                        <td className="px-3.5 py-2.5 text-slate-300 font-sans">
-                          <span className="px-2 py-0.5 bg-slate-800 rounded text-slate-300 text-[11px]">
+                        <td className="py-3 px-4 font-sans">
+                          <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-mono border border-slate-200 dark:border-slate-700/60">
                             {tx.referenceNumber || "N/A"}
                           </span>
                         </td>
@@ -412,59 +576,101 @@ export default function InventoryKardexPage() {
               </table>
             </div>
           )}
+
+          {/* Table Footer with Summary */}
+          {filteredTransactions.length > 0 && (
+            <div className="px-6 py-4 bg-slate-50/60 dark:bg-[#121318] border-t border-slate-200/80 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <div>
+                Mostrando <span className="font-semibold text-slate-900 dark:text-slate-200">{filteredTransactions.length}</span> transacciones auditadas
+              </div>
+              <div className="flex items-center gap-2 font-mono">
+                <span>Norma NIC 2 Valuación PEPS Consistente</span>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
-        /* Vista de Existencias por Almacén y Lote */
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        /* CURRENT PHYSICAL STOCKS TABLE */
+        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#161821] overflow-hidden shadow-xs">
           {filteredStocks.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">
-              <Boxes className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-              <p className="text-base font-semibold text-slate-300">No hay existencias registradas con los filtros actuales</p>
-            </div>
+            <KardexEmptyState onReset={handleResetFilters} />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950/60 uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                  <tr>
-                    <th className="px-4 py-3">Almacén</th>
-                    <th className="px-4 py-3">Artículo</th>
-                    <th className="px-4 py-3">Categoría</th>
-                    <th className="px-4 py-3">Lote Físico</th>
-                    <th className="px-4 py-3 text-right">Existencia Física</th>
-                    <th className="px-4 py-3">Unidad Medida</th>
-                    <th className="px-4 py-3">Última Actualización</th>
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-50/80 dark:bg-[#121318] border-b border-slate-200/80 dark:border-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
+                    <th className="py-3.5 px-4">Almacén</th>
+                    <th className="py-3.5 px-4">SKU / Artículo</th>
+                    <th className="py-3.5 px-4">Categoría</th>
+                    <th className="py-3.5 px-4">Lote Físico</th>
+                    <th className="py-3.5 px-4 text-right">Existencia Física</th>
+                    <th className="py-3.5 px-4">Unidad</th>
+                    <th className="py-3.5 px-4">Última Actualización</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 font-mono">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
                   {filteredStocks.map((st) => (
-                    <tr key={st.id} className="hover:bg-slate-800/40 transition">
-                      <td className="px-4 py-3 font-sans">
-                        <span className="font-semibold text-white">[{st.warehouseCode}]</span>{" "}
-                        <span className="text-slate-400">{st.warehouseName}</span>
+                    <tr
+                      key={st.id}
+                      className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
+                    >
+                      <td className="py-3 px-4 font-sans">
+                        <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                          [{st.warehouseCode}]
+                        </span>{" "}
+                        <span className="text-slate-500 dark:text-slate-400 text-xs">
+                          {st.warehouseName}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 font-sans">
-                        <div className="font-semibold text-white">[{st.itemCode}]</div>
-                        <div className="text-slate-400">{st.itemName}</div>
+                      <td className="py-3 px-4 font-sans">
+                        <div className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                          {st.itemCode}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+                          {st.itemName}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 font-sans">
-                        <span className="px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-300 rounded text-[11px]">
+                      <td className="py-3 px-4 font-sans">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] border border-slate-200 dark:border-slate-700/60">
                           {st.category}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-amber-300 font-bold whitespace-nowrap">
-                        {st.lotNumber}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold border border-amber-500/20 text-xs">
+                          {st.lotNumber}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 text-right text-base font-bold text-emerald-400">
+                      <td className="py-3 px-4 text-right text-sm font-bold text-emerald-600 dark:text-emerald-400">
                         {st.quantity.toLocaleString("es-NI", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-4 py-3 text-slate-400 font-sans">{st.unitOfMeasure}</td>
-                      <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                        {new Date(st.lastUpdated).toLocaleString("es-NI")}
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-sans">
+                        {st.unitOfMeasure}
+                      </td>
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                        {new Date(st.lastUpdated).toLocaleString("es-NI", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Table Footer with Summary */}
+          {filteredStocks.length > 0 && (
+            <div className="px-6 py-4 bg-slate-50/60 dark:bg-[#121318] border-t border-slate-200/80 dark:border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <div>
+                Mostrando <span className="font-semibold text-slate-900 dark:text-slate-200">{filteredStocks.length}</span> registros de saldo por lote
+              </div>
+              <div className="flex items-center gap-2 font-mono">
+                <span>Auditoría Física y Contable Sincronizada</span>
+              </div>
             </div>
           )}
         </div>
