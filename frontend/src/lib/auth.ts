@@ -1,4 +1,4 @@
-import apiClient from "./api";
+import apiClient, { clearClientAuthState } from "./api";
 import { LoginResponse, User } from "@/types";
 import { encryptPasswordAsymmetric } from "./crypto";
 
@@ -38,20 +38,14 @@ export const authService = {
   /**
    * Cierra la sesión en el backend para revocar/eliminar la Cookie HttpOnly
    */
-  async logout(): Promise<void> {
+  async logout(redirect: boolean = true): Promise<void> {
     try {
       await apiClient.post("/api/auth/logout");
     } catch {
       // Silencioso en caso de error de red
     } finally {
-      if (typeof window !== "undefined") {
-        document.cookie = "recoffee_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
-        document.cookie = "recoffee_must_change=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
-        localStorage.removeItem("recoffee_user_profile");
-        localStorage.removeItem("recoffee_must_change_pwd");
-        localStorage.removeItem("recoffee_token");
-        localStorage.removeItem("recoffee_user");
-        sessionStorage.clear();
+      clearClientAuthState();
+      if (redirect && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
         window.location.href = "/login";
       }
     }

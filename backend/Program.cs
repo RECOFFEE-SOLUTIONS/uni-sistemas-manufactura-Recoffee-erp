@@ -101,15 +101,17 @@ builder.Services.AddHsts(options =>
 
 builder.Services.AddCors(options =>
 {
+    // CORS Explícito para Frontend con transporte de credenciales (Cookies HttpOnly)
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",
-                "https://localhost:3000",
-                "http://localhost:3001",
-                "http://127.0.0.1:3000",
-                "http://localhost:5000",
-                "https://localhost:5001")
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://127.0.0.1:3000")
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -161,8 +163,11 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// HSTS Transporte Seguro
-app.UseHsts();
+// HSTS Transporte Seguro (Exclusivo para Producción; deshabilitado en Dev para evitar forzado HTTPS en localhost)
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
 // CORS Estricto con Credenciales (Cookies)
 app.UseCors("AllowFrontend");

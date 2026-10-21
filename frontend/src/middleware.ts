@@ -3,17 +3,20 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const session =
-    request.cookies.get("recoffee_session")?.value ||
-    request.cookies.get("recoffee_jwt")?.value ||
-    request.cookies.get("recoffee_token")?.value;
+
+  // 1. Lectura explícita de la cookie HttpOnly del JWT ('recoffee_jwt') o el flag sincronizado ('recoffee_session')
+  const jwtCookie = request.cookies.get("recoffee_jwt")?.value;
+  const sessionCookie = request.cookies.get("recoffee_session")?.value;
+  const tokenCookie = request.cookies.get("recoffee_token")?.value;
+
+  const hasValidSession = Boolean(jwtCookie || sessionCookie || tokenCookie);
 
   const mustChangePassword = request.cookies.get("recoffee_must_change")?.value === "1";
 
   const isLoginPage = pathname === "/login";
   const isChangePasswordPage = pathname === "/auth/change-password";
 
-  // Rutas públicas o de soporte que no requieren autenticación
+  // Rutas públicas que no requieren autenticación
   const isPublicRoute =
     isLoginPage ||
     pathname.startsWith("/_next") ||
@@ -21,23 +24,23 @@ export function middleware(request: NextRequest) {
     pathname.includes(".") ||
     pathname === "/favicon.ico";
 
-  // Si no está autenticado y accede a una ruta protegida
-  if (!session && !isPublicRoute) {
+  // 2. Si NO existe sesión válida y se intenta acceder a una ruta protegida -> FORZAR REDIRECCIÓN A /login
+  if (!hasValidSession && !isPublicRoute) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Si ya tiene sesión activa e intenta ir al login (y no debe cambiar contraseña)
-  if (session && isLoginPage) {
+  // 3. Si ya tiene sesión activa e intenta ir al login (sin tener que cambiar clave)
+  if (hasValidSession && isLoginPage) {
     if (mustChangePassword) {
       return NextResponse.redirect(new URL("/auth/change-password", request.url));
     }
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // Si tiene la bandera de contraseña temporal obligatoria y navega por el sistema fuera de cambiar contraseña
-  if (session && mustChangePassword && !isChangePasswordPage && !pathname.startsWith("/api") && !pathname.startsWith("/_next")) {
+  // 4. Si tiene contraseña temporal obligatoria y navega por el sistema fuera de cambiar contraseña
+  if (hasValidSession && mustChangePassword && !isChangePasswordPage && !isPublicRoute) {
     return NextResponse.redirect(new URL("/auth/change-password", request.url));
   }
 
@@ -47,10 +50,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * Match all request paths except for static files and assets:
      */
     "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
