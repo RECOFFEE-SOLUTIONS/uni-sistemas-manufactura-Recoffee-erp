@@ -5,8 +5,9 @@ import { encryptPasswordAsymmetric } from "./crypto";
 export const authService = {
   /**
    * Inicia sesión encriptando asimétricamente la contraseña en el cliente.
-   * El token JWT se almacena exclusivamente en una Cookie HttpOnly del navegador,
-   * sin tocar LocalStorage ni SessionStorage.
+   * El token JWT se almacena exclusivamente en una Cookie HttpOnly del backend.
+   * Se crea una bandera de sesión en el navegador ('recoffee_session') para que
+   * el Middleware de Next.js permita el paso al panel principal.
    */
   async login(username: string, password: string): Promise<LoginResponse> {
     const encryptedPassword = await encryptPasswordAsymmetric(password);
@@ -17,7 +18,9 @@ export const authService = {
     });
 
     if (response.data.user && typeof window !== "undefined") {
-      // Guardar únicamente perfil no sensible para hidratación de interfaz
+      // Bandera de sesión ligera para enrutamiento en Next.js
+      document.cookie = "recoffee_session=1; path=/; max-age=604800; SameSite=Lax";
+      // Guardar perfil no sensible para hidratación de interfaz
       localStorage.setItem("recoffee_user_profile", JSON.stringify(response.data.user));
     }
 
@@ -34,8 +37,8 @@ export const authService = {
       // Silencioso en caso de error de red
     } finally {
       if (typeof window !== "undefined") {
+        document.cookie = "recoffee_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
         localStorage.removeItem("recoffee_user_profile");
-        // Asegurar limpieza de legacy keys si existían
         localStorage.removeItem("recoffee_token");
         localStorage.removeItem("recoffee_user");
         sessionStorage.clear();
@@ -62,6 +65,7 @@ export const authService = {
     try {
       const response = await apiClient.get<User>("/api/auth/me");
       if (response.data && typeof window !== "undefined") {
+        document.cookie = "recoffee_session=1; path=/; max-age=604800; SameSite=Lax";
         localStorage.setItem("recoffee_user_profile", JSON.stringify(response.data));
       }
       return response.data;
