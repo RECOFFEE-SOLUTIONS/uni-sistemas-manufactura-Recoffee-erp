@@ -3,7 +3,10 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("recoffee_token")?.value;
+  const session =
+    request.cookies.get("recoffee_session")?.value ||
+    request.cookies.get("recoffee_jwt")?.value ||
+    request.cookies.get("recoffee_token")?.value;
 
   const isLoginPage = pathname === "/login";
 
@@ -16,14 +19,14 @@ export function middleware(request: NextRequest) {
     pathname === "/favicon.ico";
 
   // Si no está autenticado y accede a una ruta protegida
-  if (!token && !isPublicRoute) {
+  if (!session && !isPublicRoute) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   // Si ya tiene sesión activa e intenta ir al login
-  if (token && isLoginPage) {
+  if (session && isLoginPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 

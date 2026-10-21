@@ -80,12 +80,12 @@ public class AuthController : ControllerBase
         var roles = await _userManager.GetRolesAsync(user);
         var token = _tokenService.GenerateToken(user, roles);
 
-        // Configuración estricta de Cookie de sesión JWT (HttpOnly, Secure, SameSite=Strict)
+        // Configuración estricta de Cookie de sesión JWT (HttpOnly, Secure condicional HTTPS/dev, SameSite)
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = true, // Transport Security HSTS / HTTPS
-            SameSite = SameSiteMode.Strict,
+            Secure = Request.IsHttps,
+            SameSite = Request.IsHttps ? SameSiteMode.Strict : SameSiteMode.Lax,
             Expires = DateTimeOffset.UtcNow.AddDays(7),
             Path = "/"
         };
@@ -110,8 +110,8 @@ public class AuthController : ControllerBase
         Response.Cookies.Delete("recoffee_jwt", new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
+            Secure = Request.IsHttps,
+            SameSite = Request.IsHttps ? SameSiteMode.Strict : SameSiteMode.Lax,
             Path = "/"
         });
 
