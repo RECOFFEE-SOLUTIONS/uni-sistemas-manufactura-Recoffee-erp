@@ -139,14 +139,22 @@ function LoginForm() {
 
     try {
       const res = await authService.forgotPassword(forgotIdentifier.trim());
-      setForgotResult({
-        temporaryPassword: res.temporaryPassword,
-        message: res.message,
-      });
+      if (res.temporaryPassword) {
+        setForgotResult({
+          temporaryPassword: res.temporaryPassword,
+          message: res.message || "Contraseña temporal generada exitosamente.",
+        });
+      } else {
+        setForgotError("El servidor no devolvió una contraseña temporal válida.");
+      }
     } catch (err: unknown) {
       if (err && typeof err === "object" && "response" in err) {
-        const axErr = err as { response?: { data?: { message?: string } } };
-        setForgotError(axErr.response?.data?.message || "No se pudo generar la contraseña temporal.");
+        const axErr = err as { response?: { status?: number; data?: { message?: string } } };
+        if (axErr.response?.status === 404) {
+          setForgotError(axErr.response?.data?.message || `El usuario o correo "${forgotIdentifier}" no existe en el sistema.`);
+        } else {
+          setForgotError(axErr.response?.data?.message || "No se pudo generar la contraseña temporal. Verifique sus datos.");
+        }
       } else {
         setForgotError("Error al contactar al servidor de recuperación.");
       }
