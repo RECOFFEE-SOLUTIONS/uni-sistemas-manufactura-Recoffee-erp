@@ -1,4 +1,4 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError } from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -8,23 +8,8 @@ export const apiClient = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 10000,
+  withCredentials: true, // Habilita transporte de Cookies HttpOnly Seguras (recoffee_jwt)
 });
-
-// Request Interceptor: Inyectar token JWT automáticamente
-apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("recoffee_token");
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-    return config;
-  },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  }
-);
 
 // Response Interceptor: Manejo de errores globales y expiración de sesión (401)
 apiClient.interceptors.response.use(
@@ -32,11 +17,11 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response && error.response.status === 401) {
       if (typeof window !== "undefined") {
-        const isAuthEndpoint = error.config?.url?.includes("/api/auth/login");
+        const isAuthEndpoint =
+          error.config?.url?.includes("/api/auth/login") ||
+          error.config?.url?.includes("/api/auth/public-key") ||
+          error.config?.url?.includes("/api/auth/me");
         if (!isAuthEndpoint) {
-          localStorage.removeItem("recoffee_token");
-          localStorage.removeItem("recoffee_user");
-          // Si no estamos en la página de login, redirigir
           if (!window.location.pathname.startsWith("/login")) {
             window.location.href = "/login?session_expired=true";
           }

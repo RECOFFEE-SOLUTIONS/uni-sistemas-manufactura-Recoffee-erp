@@ -1,8 +1,10 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using backend.Data;
 using backend.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -26,12 +28,32 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 .AddDefaultTokenProviders();
 
 // 3. Services Injection
+builder.Services.AddSingleton<ICryptoService, CryptoService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IBomExplosionService, BomExplosionService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ITraceabilityService, TraceabilityService>();
 
-// 4. JWT Authentication
+// 4. Rate Limiting Policy (máximo 5 peticiones por minuto por IP para Login contra fuerza bruta)
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("login-rate-limit", httpContext =>
+    {
+        var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: clientIp,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+    });
+});
+
+// 5. JWT Authentication (Soporta Authorization Bearer y Cookie HttpOnly 'recoffee_jwt')
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "SuperSecretKeyForReCoffeeERPAndMES2026ProjectMustBeLongEnough!";
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "ReCoffeeAPI";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "ReCoffeeApp";
@@ -55,24 +77,49 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            if (context.Request.Cookies.TryGetValue("recoffee_jwt", out var cookieToken) && !string.IsNullOrEmpty(cookieToken))
+            {
+                context.Token = cookieToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
-// 5. Authorization & CORS
+// 6. Authorization, HSTS & Strict CORS with Credentials
 builder.Services.AddAuthorization();
+builder.Services.AddHsts(options =>
+{
+    options.Preload = true;
+    options.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(365);
+});
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "http://localhost:3001",
+                "http://127.0.0.1:3000",
+                "http://localhost:5000",
+                "https://localhost:5001")
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
-// 6. Controllers
+// 7. Controllers
 builder.Services.AddControllers();
 
-// 7. Swagger / OpenAPI with JWT Support
+// 8. Swagger / OpenAPI with JWT Support
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -85,7 +132,7 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Encabezado de autorización JWT usando el esquema Bearer. Ejemplo: \"Authorization: Bearer {token}\"",
+        Description = "Encabezado de autorización JWT o Cookie HttpOnly. Ejemplo: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -114,7 +161,14 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors("AllowAll");
+// HSTS Transporte Seguro
+app.UseHsts();
+
+// CORS Estricto con Credenciales (Cookies)
+app.UseCors("AllowFrontend");
+
+// Limitación de Peticiones (Rate Limiting)
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -124,7 +178,7 @@ app.MapGet("/", () => Results.Ok(new
 {
     status = "healthy",
     service = "ReCoffee Backend .NET 8",
-    security = "ASP.NET Core Identity & JWT Enabled"
+    security = "ASP.NET Core Identity & JWT HttpOnly Cookie & Rate Limiting Enabled"
 }))
 .WithName("RootHealthCheck")
 .WithOpenApi();
@@ -276,7 +330,6 @@ app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
 .WithOpenApi();
 
 app.MapControllers();
-
 
 // Auto-migration and seeder execution on startup if DB is accessible
 using (var scope = app.Services.CreateScope())
