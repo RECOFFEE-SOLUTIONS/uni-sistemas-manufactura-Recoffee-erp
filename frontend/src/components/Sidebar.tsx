@@ -51,7 +51,7 @@ export default function Sidebar({
     setMounted(true);
   }, []);
 
-  // Lista plana de opciones del sistema (Menú Plano - WI-8.01)
+  // Lista plana de opciones del sistema apuntando a las rutas raíz con auto-redirección
   const allNavItems: NavItem[] = [
     {
       name: "Inicio",
@@ -61,38 +61,38 @@ export default function Sidebar({
     },
     {
       name: "M1: Datos Maestros",
-      href: "/master-data/items",
+      href: "/master-data",
       icon: Database,
       roles: ["Admin", "Almacen"],
     },
     {
       name: "M2: Ingeniería de Producto",
-      href: "/engineering/bom",
+      href: "/engineering",
       icon: Layers,
       roles: ["Admin", "Produccion"],
     },
     {
       name: "M3: Gestión Transaccional",
-      href: "/transactions/inventory",
+      href: "/transactions",
       icon: Boxes,
       roles: ["Admin", "Produccion", "Almacen", "Ventas"],
     },
     {
       name: "M4: MES & Calidad",
-      href: "/mes/execution",
+      href: "/mes",
       icon: Activity,
       roles: ["Admin", "Calidad", "Produccion"],
     },
     {
       name: "M5: Telemetría & KPIs",
-      href: "/iiot/kpis",
+      href: "/iiot",
       icon: Radio,
       badge: "Live",
       roles: ["Admin"],
     },
     {
       name: "M8: Administración",
-      href: "/admin/users",
+      href: "/admin",
       icon: Users,
       roles: ["Admin"],
     },
@@ -117,12 +117,12 @@ export default function Sidebar({
   const isItemActive = (href: string) => {
     if (href === "/") return pathname === "/";
     if (href === "/settings") return pathname.startsWith("/settings");
-    if (href.startsWith("/master-data")) return pathname.startsWith("/master-data");
-    if (href.startsWith("/engineering")) return pathname.startsWith("/engineering");
-    if (href.startsWith("/transactions")) return pathname.startsWith("/transactions");
-    if (href.startsWith("/mes")) return pathname.startsWith("/mes");
-    if (href.startsWith("/iiot")) return pathname.startsWith("/iiot");
-    if (href.startsWith("/admin")) return pathname.startsWith("/admin");
+    if (href === "/master-data") return pathname.startsWith("/master-data");
+    if (href === "/engineering") return pathname.startsWith("/engineering");
+    if (href === "/transactions") return pathname.startsWith("/transactions");
+    if (href === "/mes") return pathname.startsWith("/mes");
+    if (href === "/iiot") return pathname.startsWith("/iiot");
+    if (href === "/admin") return pathname.startsWith("/admin");
     return pathname.startsWith(href);
   };
 
