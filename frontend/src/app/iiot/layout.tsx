@@ -9,7 +9,7 @@ export default function IiotLayout({
   return (
     <div className="space-y-4">
       <ModuleTabs module="iiot" />
-      {children}
+      <main className="w-full">{children}</main>
     </div>
   );
 }

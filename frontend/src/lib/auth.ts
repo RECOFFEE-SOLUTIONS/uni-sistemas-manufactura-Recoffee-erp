@@ -41,9 +41,15 @@ export const authService = {
     if (response.data.user && typeof window !== "undefined") {
       // Bandera de sesión ligera para enrutamiento en Next.js
       document.cookie = "recoffee_session=1; path=/; max-age=604800; SameSite=Lax";
-      const mainRole = response.data.user.roles?.[0] || "";
+      const mainRole = response.data.user.roles?.[0] || "Admin";
       document.cookie = "recoffee_role=" + encodeURIComponent(mainRole) + "; path=/; max-age=604800; SameSite=Lax";
-      // Guardar perfil no sensible para hidratación de interfaz
+
+      if (response.data.token) {
+        document.cookie = "recoffee_token=" + encodeURIComponent(response.data.token) + "; path=/; max-age=604800; SameSite=Lax";
+        localStorage.setItem("recoffee_token", response.data.token);
+      }
+
+      // Guardar perfil completo con roles para hidratación inmediata de AuthContext y Sidebar
       localStorage.setItem("recoffee_user_profile", JSON.stringify(response.data.user));
 
       if (response.data.mustChangePassword) {

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -91,9 +91,14 @@ interface ModuleTabsProps {
 }
 
 export default function ModuleTabs({ module }: ModuleTabsProps) {
-  const pathname = usePathname();
-  const config = MODULE_NAV_CONFIG[module];
+  const pathname = usePathname() || "";
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const config = MODULE_NAV_CONFIG[module];
   if (!config) return null;
 
   return (
@@ -101,37 +106,37 @@ export default function ModuleTabs({ module }: ModuleTabsProps) {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <nav
           className="flex items-center gap-1.5 p-1 bg-slate-100/90 dark:bg-[#12131a] border border-slate-200 dark:border-slate-800 rounded-xl overflow-x-auto max-w-full scrollbar-none"
-          aria-label={`Navegación secundaria de ${config.title}`}
+          aria-label={"Navegación secundaria de " + config.title}
         >
           {config.tabs.map((tab) => {
-            const isActive = pathname === tab.href || pathname.startsWith(tab.href + "/");
+            const isActive = mounted && (pathname === tab.href || pathname.startsWith(tab.href + "/"));
             const Icon = tab.icon;
 
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-150 whitespace-nowrap select-none ${
-                  isActive
+                className={"flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all duration-150 whitespace-nowrap select-none " +
+                  (isActive
                     ? "bg-white dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-slate-200/90 dark:border-amber-500/30 shadow-xs"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60"
-                }`}
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/60")
+                }
               >
                 <Icon
-                  className={`w-4 h-4 transition-colors ${
-                    isActive
+                  className={"w-4 h-4 transition-colors " +
+                    (isActive
                       ? "text-amber-600 dark:text-amber-400"
-                      : "text-slate-400 dark:text-slate-500"
-                  }`}
+                      : "text-slate-400 dark:text-slate-500")
+                  }
                 />
                 <span>{tab.name}</span>
                 {tab.badge && (
                   <span
-                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full font-semibold ${
-                      isActive
+                    className={"text-[10px] font-mono px-1.5 py-0.5 rounded-full font-semibold " +
+                      (isActive
                         ? "bg-amber-100 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300"
-                        : "bg-slate-200/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-                    }`}
+                        : "bg-slate-200/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400")
+                    }
                   >
                     {tab.badge}
                   </span>

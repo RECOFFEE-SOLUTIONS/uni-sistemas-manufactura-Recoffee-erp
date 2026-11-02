@@ -9,7 +9,7 @@ export default function TransactionsLayout({
   return (
     <div className="space-y-4">
       <ModuleTabs module="transactions" />
-      {children}
+      <main className="w-full">{children}</main>
     </div>
   );
 }

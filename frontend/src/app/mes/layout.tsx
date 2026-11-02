@@ -9,7 +9,7 @@ export default function MesLayout({
   return (
     <div className="space-y-4">
       <ModuleTabs module="mes" />
-      {children}
+      <main className="w-full">{children}</main>
     </div>
   );
 }

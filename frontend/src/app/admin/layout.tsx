@@ -9,7 +9,7 @@ export default function AdminLayout({
   return (
     <div className="space-y-4">
       <ModuleTabs module="admin" />
-      {children}
+      <main className="w-full">{children}</main>
     </div>
   );
 }

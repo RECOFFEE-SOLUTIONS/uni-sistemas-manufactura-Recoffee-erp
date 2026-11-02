@@ -4,33 +4,42 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Rutas públicas que no requieren autenticación
-  const isPublicRoute =
+  // 1. Rutas públicas excluidas de cualquier validación
+  if (
     pathname === "/login" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
+    pathname.startsWith("/static") ||
     pathname.includes(".") ||
-    pathname === "/favicon.ico";
+    pathname === "/favicon.ico"
+  ) {
+    // Si ya existe sesión y el usuario solicita /login, redirigir a inicio
+    const hasSession =
+      request.cookies.has("recoffee_jwt") ||
+      request.cookies.has("recoffee_session") ||
+      request.cookies.has("recoffee_token");
 
-  // Verificación permisiva de sesión basada exclusivamente en la existencia de cualquier cookie de sesión/JWT
-  const jwtCookie = request.cookies.get("recoffee_jwt")?.value;
-  const sessionCookie = request.cookies.get("recoffee_session")?.value;
-  const tokenCookie = request.cookies.get("recoffee_token")?.value;
+    if (hasSession && pathname === "/login") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
 
-  const hasValidSession = Boolean(jwtCookie || sessionCookie || tokenCookie);
+    return NextResponse.next();
+  }
 
-  // 1. Si no existe sesión y se intenta acceder a una ruta protegida -> Redirigir a login
-  if (!hasValidSession && !isPublicRoute) {
+  // 2. Comprobar presencia de la cookie de sesión (recoffee_jwt, recoffee_session o recoffee_token)
+  const hasSession =
+    request.cookies.has("recoffee_jwt") ||
+    request.cookies.has("recoffee_session") ||
+    request.cookies.has("recoffee_token");
+
+  // 3. Si no existe cookie de sesión, redirigir al login
+  if (!hasSession) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Si ya tiene sesión activa e intenta ir al login -> Permitir acceso al panel principal
-  if (hasValidSession && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
+  // 4. Si la sesión existe, permitir paso sin ninguna restricción de roles en todas las rutas y subrutas
   return NextResponse.next();
 }
 

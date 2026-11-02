@@ -9,7 +9,7 @@ export default function EngineeringLayout({
   return (
     <div className="space-y-4">
       <ModuleTabs module="engineering" />
-      {children}
+      <main className="w-full">{children}</main>
     </div>
   );
 }

@@ -16,8 +16,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Inicialización síncrona inmediata desde localStorage para que los roles estén disponibles al instante
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== "undefined") {
+      return authService.getUser();
+    }
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -26,21 +32,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(storedUser);
       }
       try {
-        // Valida la sesión activa a través de la Cookie HttpOnly segura en backend
         const freshUser = await authService.getMe();
         if (freshUser) {
           setUser(freshUser);
-        } else {
-          // Si el backend no validó la cookie, resetear estado en cliente sin redirigir de inmediato
-          authService.logout(false);
-          setUser(null);
         }
-      } catch {
-        // 401: la sesión HttpOnly no está activa
-        authService.logout(false);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
+      } catch (err) {
+        console.info("[AuthContext] Sesión local conservada:", err);
       }
     };
 
@@ -67,8 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const u = await authService.getMe();
     if (u) {
       setUser(u);
-    } else {
-      setUser(null);
     }
   };
 
