@@ -47,3 +47,11 @@ public record ChangePasswordRequest(
     string NewPassword,
     string? ResetToken
 );
+
+public class UpdateUserProfileRequest
+{
+    public string? FullName { get; set; }
+    public string? CurrentPassword { get; set; }
+    public string? NewPassword { get; set; }
+    public string? Username { get; set; }
+}

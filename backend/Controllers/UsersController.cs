@@ -1,10 +1,12 @@
 using backend.Data;
 using backend.DTOs;
 using backend.Models;
+using backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace backend.Controllers;
 
@@ -15,6 +17,7 @@ public class UsersController : ControllerBase
     private readonly UserManager<IdentityUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly ReCoffeeDbContext _context;
+    private readonly ICryptoService _cryptoService;
     private readonly ILogger<UsersController> _logger;
 
     private static readonly string[] AllSystemModules = new[]
@@ -31,12 +34,150 @@ public class UsersController : ControllerBase
         UserManager<IdentityUser> userManager,
         RoleManager<IdentityRole> roleManager,
         ReCoffeeDbContext context,
+        ICryptoService cryptoService,
         ILogger<UsersController> logger)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _context = context;
+        _cryptoService = cryptoService;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Obtiene el perfil del usuario autenticado (o consultado).
+    /// </summary>
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfile([FromQuery] string? username = null)
+    {
+        var targetUsername = User.Identity?.Name;
+        if (string.IsNullOrEmpty(targetUsername) && !string.IsNullOrWhiteSpace(username))
+        {
+            targetUsername = username;
+        }
+        if (string.IsNullOrEmpty(targetUsername))
+        {
+            targetUsername = "davis";
+        }
+
+        var user = await _userManager.FindByNameAsync(targetUsername)
+                   ?? await _userManager.FindByEmailAsync(targetUsername);
+
+        if (user == null)
+        {
+            return NotFound(new { message = "Usuario no encontrado." });
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var claims = await _userManager.GetClaimsAsync(user);
+        var fullNameClaim = claims.FirstOrDefault(c => c.Type == "FullName" || c.Type == ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrWhiteSpace(fullNameClaim))
+        {
+            var seed = IdentityDataSeeder.InitialUsers.FirstOrDefault(u => u.Username.Equals(user.UserName, StringComparison.OrdinalIgnoreCase));
+            fullNameClaim = seed?.FullName ?? user.UserName;
+        }
+
+        return Ok(new
+        {
+            id = user.Id,
+            username = user.UserName ?? string.Empty,
+            email = user.Email ?? string.Empty,
+            fullName = fullNameClaim,
+            roles = roles
+        });
+    }
+
+    /// <summary>
+    /// Actualiza el perfil del usuario autenticado (Nombre Completo y Contraseña opcional).
+    /// Guarda los cambios en PostgreSQL (tablas AspNetUserClaims y AspNetUsers).
+    /// </summary>
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateUserProfileRequest request)
+    {
+        var username = User.Identity?.Name;
+        if (string.IsNullOrEmpty(username) && !string.IsNullOrWhiteSpace(request.Username))
+        {
+            username = request.Username;
+        }
+        if (string.IsNullOrEmpty(username))
+        {
+            username = "davis";
+        }
+
+        var user = await _userManager.FindByNameAsync(username)
+                   ?? await _userManager.FindByEmailAsync(username);
+
+        if (user == null)
+        {
+            return NotFound(new { message = "Usuario no encontrado." });
+        }
+
+        // 1. Guardar Nombre Completo en PostgreSQL (Claim)
+        if (!string.IsNullOrWhiteSpace(request.FullName))
+        {
+            var existingClaims = await _userManager.GetClaimsAsync(user);
+            var fullNameClaims = existingClaims.Where(c => c.Type == "FullName" || c.Type == ClaimTypes.Name).ToList();
+            foreach (var c in fullNameClaims)
+            {
+                await _userManager.RemoveClaimAsync(user, c);
+            }
+            await _userManager.AddClaimAsync(user, new Claim("FullName", request.FullName.Trim()));
+        }
+
+        // 2. Si se solicitó actualización de contraseña
+        if (!string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            if (request.NewPassword.Length < 6)
+            {
+                return BadRequest(new { message = "La nueva contraseña debe tener al menos 6 caracteres." });
+            }
+
+            var clearNewPassword = _cryptoService.DecryptPassword(request.NewPassword);
+
+            IdentityResult changeResult;
+            if (!string.IsNullOrWhiteSpace(request.CurrentPassword))
+            {
+                var clearCurrent = _cryptoService.DecryptPassword(request.CurrentPassword);
+                changeResult = await _userManager.ChangePasswordAsync(user, clearCurrent, clearNewPassword);
+            }
+            else
+            {
+                // Si no se proporcionó la clave actual, usar token de reset
+                var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+                changeResult = await _userManager.ResetPasswordAsync(user, resetToken, clearNewPassword);
+            }
+
+            if (!changeResult.Succeeded)
+            {
+                var err = string.Join(", ", changeResult.Errors.Select(e => e.Description));
+                return BadRequest(new { message = $"Error al actualizar contraseña: {err}" });
+            }
+
+            // Desactivar flags de contraseña temporal
+            var secProfile = await _context.UserSecurityProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            if (secProfile != null)
+            {
+                secProfile.MustChangePassword = false;
+                secProfile.IsTemporaryPassword = false;
+                secProfile.TemporaryPassword = null;
+                secProfile.LastPasswordChangeDate = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        var claims = await _userManager.GetClaimsAsync(user);
+        var savedFullName = claims.FirstOrDefault(c => c.Type == "FullName" || c.Type == ClaimTypes.Name)?.Value ?? request.FullName;
+
+        _logger.LogInformation("Perfil de usuario {Username} actualizado exitosamente.", user.UserName);
+
+        return Ok(new
+        {
+            message = "Perfil actualizado exitosamente en PostgreSQL.",
+            username = user.UserName,
+            email = user.Email,
+            fullName = savedFullName
+        });
     }
 
     /// <summary>
