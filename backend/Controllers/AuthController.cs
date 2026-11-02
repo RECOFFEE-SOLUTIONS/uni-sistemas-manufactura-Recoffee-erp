@@ -1,4 +1,4 @@
-using backend.Data;
+﻿using backend.Data;
 using backend.DTOs;
 using backend.Models;
 using backend.Services;
@@ -86,22 +86,24 @@ public class AuthController : ControllerBase
         await _userManager.SetLockoutEndDateAsync(user, null);
         await _userManager.ResetAccessFailedCountAsync(user);
 
-        // Parche de desarrollo: si el usuario es 'davis' o 'davis@recoffee.ni', forzar contraseña Password123!
-        if (searchKey.Equals("davis", StringComparison.OrdinalIgnoreCase) ||
-            searchKey.StartsWith("davis@", StringComparison.OrdinalIgnoreCase))
+        // Desencriptar asimétricamente la contraseña recibida del cliente
+        var clearPassword = _cryptoService.DecryptPassword(request.Password);
+
+        // Permitir inicio de sesión flexible con su contraseña registrada, o con clave maestra (Password123!) o temporal (Recoffee.2026!) para davis
+        bool isDavis = searchKey.Equals("davis", StringComparison.OrdinalIgnoreCase) ||
+                       searchKey.StartsWith("davis@", StringComparison.OrdinalIgnoreCase);
+
+        var result = await _signInManager.CheckPasswordSignInAsync(user, clearPassword, lockoutOnFailure: false);
+        if (!result.Succeeded && isDavis && (clearPassword == "Password123!" || clearPassword == "Recoffee.2026!"))
         {
             var hasPwd = await _userManager.HasPasswordAsync(user);
             if (hasPwd)
             {
                 await _userManager.RemovePasswordAsync(user);
             }
-            await _userManager.AddPasswordAsync(user, "Password123!");
+            await _userManager.AddPasswordAsync(user, clearPassword);
+            result = Microsoft.AspNetCore.Identity.SignInResult.Success;
         }
-
-        // Desencriptar asimétricamente la contraseña recibida del cliente
-        var clearPassword = _cryptoService.DecryptPassword(request.Password);
-
-        var result = await _signInManager.CheckPasswordSignInAsync(user, clearPassword, lockoutOnFailure: false);
         if (!result.Succeeded)
         {
             string reason = result.IsLockedOut ? "Cuenta bloqueada temporalmente" : "Contraseña incorrecta";
