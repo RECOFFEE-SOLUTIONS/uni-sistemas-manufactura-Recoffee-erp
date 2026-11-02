@@ -44,6 +44,7 @@ export default function Navbar({
     if (path.includes("/iiot/sensor")) return "Telemetría IIoT / Curva de Secado RO-3";
     if (path.includes("/iiot/kpis")) return "Telemetría IIoT / Dashboard de KPIs y OEE";
     if (path.includes("/admin/users")) return "Administración / Gestión de Usuarios y Roles";
+    if (path.includes("/settings")) return "Configuraciones Básicas";
     return "Workspace";
   };
 
