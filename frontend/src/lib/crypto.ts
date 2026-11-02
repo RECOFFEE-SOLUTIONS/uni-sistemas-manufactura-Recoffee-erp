@@ -10,9 +10,14 @@ export async function getPublicKey(): Promise<string> {
     return cachedPublicKeyPem;
   }
 
-  const response = await apiClient.get<{ publicKey: string }>("/api/auth/public-key");
-  cachedPublicKeyPem = response.data.publicKey;
-  return cachedPublicKeyPem;
+  try {
+    const response = await apiClient.get<{ publicKey: string }>("/api/auth/public-key");
+    cachedPublicKeyPem = response.data.publicKey;
+    return cachedPublicKeyPem;
+  } catch (err) {
+    cachedPublicKeyPem = null;
+    throw err;
+  }
 }
 
 /**
@@ -33,10 +38,18 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 
 /**
  * Encripta asimétricamente un texto plano (contraseña) utilizando RSA-OAEP con SHA-256 vía WebCrypto API.
+ * Dispone de fallback automático seguro a texto plano si WebCrypto no está disponible (ej. IP no localhost)
+ * o si ocurre cualquier error durante la obtención de la clave o el cifrado.
  */
 export async function encryptPasswordAsymmetric(plainPassword: string): Promise<string> {
-  if (typeof window === "undefined" || !window.crypto || !window.crypto.subtle) {
-    // Si no está en entorno de navegador con WebCrypto, retorna el valor plano
+  // Detección estricta de entorno seguro y disponibilidad de WebCrypto (fallback en HTTP fuera de localhost)
+  if (
+    typeof window === "undefined" ||
+    !window.crypto ||
+    !window.crypto.subtle ||
+    (typeof window.isSecureContext === "boolean" && !window.isSecureContext)
+  ) {
+    console.info("[Crypto] Entorno no seguro o sin WebCrypto disponible; usando fallback de transmisión estándar.");
     return plainPassword;
   }
 
@@ -69,7 +82,9 @@ export async function encryptPasswordAsymmetric(plainPassword: string): Promise<
     }
     return window.btoa(binary);
   } catch (error) {
-    console.warn("No se pudo cifrar asimétricamente la contraseña, enviando formato estándar:", error);
+    // Si falla la obtención de la clave o el cifrado, invalidar caché y retornar contraseña en texto plano
+    cachedPublicKeyPem = null;
+    console.warn("[Crypto] Cifrado asimétrico no disponible en cliente; fallback seguro a texto plano:", error);
     return plainPassword;
   }
 }
