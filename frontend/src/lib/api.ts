@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+﻿import axios, { AxiosError } from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -19,6 +19,7 @@ export function clearClientAuthState() {
     document.cookie = "recoffee_jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
     document.cookie = "recoffee_must_change=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
     document.cookie = "recoffee_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    document.cookie = "recoffee_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
 
     // Limpieza de almacenamiento local y de sesión
     localStorage.removeItem("recoffee_user_profile");

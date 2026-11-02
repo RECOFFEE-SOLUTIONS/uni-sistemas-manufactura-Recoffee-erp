@@ -44,6 +44,45 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth/change-password", request.url));
   }
 
+  // 5. RBAC Route Protection: Validar permisos según rol del usuario
+  const role = decodeURIComponent(request.cookies.get("recoffee_role")?.value || "").toLowerCase();
+
+  // Si es Admin o no se ha determinado el rol aún, permitir acceso
+  if (hasValidSession && role && role !== "admin" && !isPublicRoute && !isChangePasswordPage && pathname !== "/") {
+    // Produccion: Solo ve M2 (Ingeniería) y M3 (Producción)
+    if (role === "produccion") {
+      const isAllowed = pathname.startsWith("/engineering") || pathname === "/transactions/production";
+      if (!isAllowed) {
+        return NextResponse.redirect(new URL("/transactions/production", request.url));
+      }
+    }
+    // Calidad: Solo ve M4 (Capa MES y Calidad)
+    else if (role === "calidad") {
+      const isAllowed = pathname.startsWith("/mes");
+      if (!isAllowed) {
+        return NextResponse.redirect(new URL("/mes/execution", request.url));
+      }
+    }
+    // Almacen: Solo ve M1 (Almacenes y Artículos) y M3 (Compras e Inventario)
+    else if (role === "almacen") {
+      const isAllowed =
+        pathname === "/master-data/warehouses" ||
+        pathname === "/master-data/items" ||
+        pathname === "/transactions/purchases" ||
+        pathname === "/transactions/inventory";
+      if (!isAllowed) {
+        return NextResponse.redirect(new URL("/transactions/inventory", request.url));
+      }
+    }
+    // Ventas: Solo ve M3 (Ventas & Despacho)
+    else if (role === "ventas") {
+      const isAllowed = pathname === "/transactions/sales";
+      if (!isAllowed) {
+        return NextResponse.redirect(new URL("/transactions/sales", request.url));
+      }
+    }
+  }
+
   return NextResponse.next();
 }
 

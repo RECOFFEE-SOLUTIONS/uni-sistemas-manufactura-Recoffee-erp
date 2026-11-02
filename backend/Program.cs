@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Threading.RateLimiting;
 using backend.Data;
 using backend.Services;
@@ -132,7 +132,11 @@ builder.Services.AddCors(options =>
 });
 
 // 7. Controllers
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 // 8. Swagger / OpenAPI with JWT Support
 builder.Services.AddEndpointsApiExplorer();

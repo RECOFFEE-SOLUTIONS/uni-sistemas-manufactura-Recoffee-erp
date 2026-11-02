@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Boxes,
@@ -181,9 +183,12 @@ export default function ItemsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
             Catálogo Maestro de Artículos
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Administración de Materias Primas (MP), Empaques (EMP), Semielaborados (SEM) y Producto Terminado (PT).
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Materias primas y terminados
+            </p>
+            <InfoTooltip content="Administración de Materias Primas (MP), Empaques (EMP), Semielaborados (SEM) y Producto Terminado (PT)." />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

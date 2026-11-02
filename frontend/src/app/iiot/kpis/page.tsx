@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
@@ -72,17 +74,20 @@ export default function IiotKpisPage() {
   return (
     <div className="space-y-6">
       {/* Encabezado */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-amber-500 uppercase tracking-wider mb-1">
             <LayoutDashboard className="w-4 h-4" /> Módulo M5 — Métricas Ejecutivas & Analítica
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Dashboard Ejecutivo de Manufactura & OEE
           </h1>
-          <p className="text-sm text-slate-400">
-            Monitoreo en tiempo real de los 4 KPIs estratégicos calculados desde la base de datos transaccional.
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Métricas estratégicas y OEE
+            </p>
+            <InfoTooltip content="Monitoreo en tiempo real de los 4 KPIs estratégicos calculados desde la base de datos transaccional." />
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -95,7 +100,7 @@ export default function IiotKpisPage() {
           <button
             onClick={loadKpiData}
             disabled={isLoading}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition-colors"
+            className="p-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
             title="Actualizar KPIs"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-amber-400" : ""}`} />
@@ -111,7 +116,7 @@ export default function IiotKpisPage() {
           className={`cursor-pointer rounded-2xl p-5 border transition-all shadow-xl space-y-3 ${
             activeDetailTab === "yield"
               ? "bg-slate-900 border-emerald-500/60 ring-2 ring-emerald-500/20"
-              : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+              : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-700"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -145,7 +150,7 @@ export default function IiotKpisPage() {
           className={`cursor-pointer rounded-2xl p-5 border transition-all shadow-xl space-y-3 ${
             activeDetailTab === "cost"
               ? "bg-slate-900 border-amber-500/60 ring-2 ring-amber-500/20"
-              : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+              : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-700"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -190,7 +195,7 @@ export default function IiotKpisPage() {
           className={`cursor-pointer rounded-2xl p-5 border transition-all shadow-xl space-y-3 ${
             activeDetailTab === "turnover"
               ? "bg-slate-900 border-sky-500/60 ring-2 ring-sky-500/20"
-              : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+              : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-700"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -224,7 +229,7 @@ export default function IiotKpisPage() {
           className={`cursor-pointer rounded-2xl p-5 border transition-all shadow-xl space-y-3 ${
             activeDetailTab === "oee"
               ? "bg-slate-900 border-indigo-500/60 ring-2 ring-indigo-500/20"
-              : "bg-slate-900/80 border-slate-800 hover:border-slate-700"
+              : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 shadow-sm hover:border-slate-700"
           }`}
         >
           <div className="flex items-center justify-between">
@@ -301,7 +306,7 @@ export default function IiotKpisPage() {
 
         {/* DETALLE 1: YIELD */}
         {activeDetailTab === "yield" && yieldData && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-white">Rendimiento por Orden de Producción</h3>
@@ -322,7 +327,7 @@ export default function IiotKpisPage() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                   <tr>
                     <th className="p-3">Orden #</th>
                     <th className="p-3">Lote Asignado</th>
@@ -367,7 +372,7 @@ export default function IiotKpisPage() {
 
         {/* DETALLE 2: COSTO UNITARIO */}
         {activeDetailTab === "cost" && costData && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-white">
@@ -384,7 +389,7 @@ export default function IiotKpisPage() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                   <tr>
                     <th className="p-3">Lote de Fabricación</th>
                     <th className="p-3">OP #</th>
@@ -436,7 +441,7 @@ export default function IiotKpisPage() {
 
         {/* DETALLE 3: ROTACIÓN DE INVENTARIO */}
         {activeDetailTab === "turnover" && turnoverData && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-white">Composición y Rotación de Inventarios</h3>
@@ -451,7 +456,7 @@ export default function IiotKpisPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {turnoverData.categoryBreakdown.map((cat) => (
-                <div key={cat.category} className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+                <div key={cat.category} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-white text-sm">{cat.category}</span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-500/20 text-sky-300">
@@ -475,7 +480,7 @@ export default function IiotKpisPage() {
 
         {/* DETALLE 4: OEE Y TIEMPOS DE CICLO */}
         {activeDetailTab === "oee" && oeeData && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-bold text-white">Desglose de Tiempos de Ciclo de Ruta (RO-1 a RO-8)</h3>
@@ -490,7 +495,7 @@ export default function IiotKpisPage() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs text-slate-300">
-                <thead className="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
                   <tr>
                     <th className="p-3">Operación</th>
                     <th className="p-3">Nombre</th>

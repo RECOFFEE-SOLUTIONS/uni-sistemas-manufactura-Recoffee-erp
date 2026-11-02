@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   ShoppingCart,
@@ -231,9 +233,12 @@ export default function PurchasesPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
             Órdenes de Compra y Recepción
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Adquisición y recepción física de materias primas (ALM-001) e insumos de empaque (ALM-004) con trazabilidad por lotes.
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Abastecimiento y recepción física
+            </p>
+            <InfoTooltip content="Adquisición y recepción física de materias primas (ALM-001) e insumos de empaque (ALM-004) con trazabilidad por lotes." />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

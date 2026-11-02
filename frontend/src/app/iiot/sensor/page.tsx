@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Radio,
@@ -175,17 +177,20 @@ export default function IiotSensorPage() {
   return (
     <div className="space-y-6">
       {/* Encabezado SCADA */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-500 uppercase tracking-wider mb-1">
             <Radio className="w-4 h-4 text-amber-400 animate-pulse" /> Telemetría IIoT en Vivo — Patio de Secado Solar (RO-3)
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Monitor SCADA & Curva Cinética de Secado
           </h1>
-          <p className="text-sm text-slate-400">
-            Adquisición continua de humedad y gradiente térmico desde sensor IoT industrial (SENSOR-RO3-SOLAR-01).
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Curva cinética de secado
+            </p>
+            <InfoTooltip content="Adquisición continua de humedad y gradiente térmico desde sensor IoT industrial (SENSOR-RO3-SOLAR-01)." />
+          </div>
         </div>
 
         {/* Controles de Telemetría */}
@@ -194,7 +199,7 @@ export default function IiotSensorPage() {
           <select
             value={selectedLot}
             onChange={(e) => setSelectedLot(e.target.value)}
-            className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
           >
             <option value="">-- Todos los Lotes Monitoreados --</option>
             {activeOrders.map((o) => (
@@ -238,7 +243,7 @@ export default function IiotSensorPage() {
           <button
             onClick={() => loadTelemetry(selectedLot)}
             disabled={isLoading}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition-colors"
+            className="p-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
             title="Refrescar datos"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-amber-400" : ""}`} />
@@ -249,7 +254,7 @@ export default function IiotSensorPage() {
       {/* TARJETAS DE LECTURA EN TIEMPO REAL */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Tarjeta 1: Humedad Actual */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-2 relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-2 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase">
             <span>Humedad Actual</span>
             <Droplets className="w-4 h-4 text-sky-400" />
@@ -281,7 +286,7 @@ export default function IiotSensorPage() {
         </div>
 
         {/* Tarjeta 2: Temperatura de Cama Solar */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase">
             <span>Temperatura Lecho</span>
             <Thermometer className="w-4 h-4 text-amber-400" />
@@ -301,7 +306,7 @@ export default function IiotSensorPage() {
         </div>
 
         {/* Tarjeta 3: Lote y Sensor Activo */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase">
             <span>Dispositivo Sensor</span>
             <Radio className="w-4 h-4 text-emerald-400" />
@@ -320,7 +325,7 @@ export default function IiotSensorPage() {
         </div>
 
         {/* Tarjeta 4: Estado del Proceso de Secado */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-2">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-400 font-semibold uppercase">
             <span>Estado Operación RO-3</span>
             <Clock className="w-4 h-4 text-slate-400" />
@@ -346,7 +351,7 @@ export default function IiotSensorPage() {
       </div>
 
       {/* GRÁFICO PRINCIPAL DE LA CURVA DE SECADO IIOT (RECHARTS) */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 shadow-2xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -472,7 +477,7 @@ export default function IiotSensorPage() {
       </div>
 
       {/* TABLA DE ÚLTIMAS 10 LECTURAS REGISTRADAS */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
             <Clock className="w-4 h-4 text-slate-400" /> Registro Detallado de Paquetes Recibidos

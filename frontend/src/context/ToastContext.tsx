@@ -42,10 +42,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={t.id}
             className={`pointer-events-auto flex items-center justify-between p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all ${
               t.type === "success"
-                ? "bg-slate-900/95 border-emerald-500/40 text-emerald-300 shadow-emerald-950/20"
+                ? "bg-white dark:bg-slate-900/95 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 shadow-md"
                 : t.type === "error"
-                ? "bg-slate-900/95 border-rose-500/40 text-rose-300 shadow-rose-950/20"
-                : "bg-slate-900/95 border-blue-500/40 text-blue-300 shadow-blue-950/20"
+                ? "bg-white dark:bg-slate-900/95 border-rose-500/50 text-rose-800 dark:text-rose-300 shadow-md"
+                : "bg-white dark:bg-slate-900/95 border-blue-500/50 text-blue-800 dark:text-blue-300 shadow-md"
             }`}
           >
             <div className="flex items-center gap-2.5">
@@ -56,11 +56,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               ) : (
                 <Info className="w-5 h-5 text-blue-400 flex-shrink-0" />
               )}
-              <span className="text-xs font-medium text-slate-100">{t.message}</span>
+              <span className="text-xs font-medium text-slate-800 dark:text-slate-100">{t.message}</span>
             </div>
             <button
               onClick={() => removeToast(t.id)}
-              className="p-1 rounded-md text-slate-400 hover:text-white"
+              className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-white"
             >
               <X className="w-3.5 h-3.5" />
             </button>

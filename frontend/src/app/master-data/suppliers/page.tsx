@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Truck,
@@ -158,9 +160,12 @@ export default function SuppliersPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
             Gestión de Proveedores
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Administración de suministradores de borra de café, cáscaras orgánicas y empaques biodegradables.
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Suministradores y materias primas
+            </p>
+            <InfoTooltip content="Administración de suministradores de borra de café, cáscaras orgánicas y empaques biodegradables." />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   GitBranch,
@@ -91,17 +93,20 @@ export default function MesTraceabilityPage() {
   return (
     <div className="space-y-6">
       {/* Encabezado */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-amber-500 uppercase tracking-wider mb-1">
             <GitBranch className="w-4 h-4" /> Módulo de Trazabilidad & Genealogía
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Genealogía Bidireccional de Lotes
           </h1>
-          <p className="text-sm text-slate-400">
-            Rastreo genealógico Upstream (Hacia atrás: Proveedores y OCs) y Downstream (Hacia adelante: Ventas y Clientes).
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Rastreo upstream y downstream
+            </p>
+            <InfoTooltip content="Rastreo genealógico Upstream (Hacia atrás: Proveedores y OCs) y Downstream (Hacia adelante: Ventas y Clientes)." />
+          </div>
         </div>
 
         {/* Buscador de Lote */}
@@ -113,7 +118,7 @@ export default function MesTraceabilityPage() {
               placeholder="Buscar lote: ej. LOTE-PT-001..."
               value={searchLot}
               onChange={(e) => setSearchLot(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 font-mono"
             />
           </div>
           <button
@@ -245,7 +250,7 @@ export default function MesTraceabilityPage() {
                   {traceabilityData.upstream.map((u, idx) => (
                     <div
                       key={idx}
-                      className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs hover:border-sky-500/40 transition-colors shadow-md"
+                      className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2 text-xs hover:border-sky-500/40 transition-colors shadow-md"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-white text-sm">{u.itemName}</span>
@@ -297,7 +302,7 @@ export default function MesTraceabilityPage() {
 
               {traceabilityData.productionOrder ? (
                 <div className="space-y-4 text-xs">
-                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                  <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Orden de Producción:</span>
                       <strong className="text-amber-400 font-mono text-sm">
@@ -363,7 +368,7 @@ export default function MesTraceabilityPage() {
                   {traceabilityData.downstream.map((d, idx) => (
                     <div
                       key={idx}
-                      className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs hover:border-emerald-500/40 transition-colors shadow-md"
+                      className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2 text-xs hover:border-emerald-500/40 transition-colors shadow-md"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-white text-sm">{d.customerName}</span>
@@ -405,7 +410,7 @@ export default function MesTraceabilityPage() {
 
       {/* VISTA 2: TIMELINE DE MOVIMIENTOS KARDEX */}
       {traceabilityData && activeTab === "timeline" && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               <Clock className="w-5 h-5 text-amber-500" /> Línea de Tiempo Inmutable (Kardex de Lote)
@@ -429,7 +434,7 @@ export default function MesTraceabilityPage() {
                   }`}
                 />
 
-                <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-1 hover:border-slate-700 transition-colors">
+                <div className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-1 hover:border-slate-700 transition-colors">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <span className="font-bold text-white text-sm">{tx.transactionType}</span>
                     <span className="text-slate-400 text-[11px]">

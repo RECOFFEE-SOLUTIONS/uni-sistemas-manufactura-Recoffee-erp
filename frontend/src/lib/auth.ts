@@ -20,6 +20,8 @@ export const authService = {
     if (response.data.user && typeof window !== "undefined") {
       // Bandera de sesión ligera para enrutamiento en Next.js
       document.cookie = "recoffee_session=1; path=/; max-age=604800; SameSite=Lax";
+      const mainRole = response.data.user.roles?.[0] || "";
+      document.cookie = "recoffee_role=" + encodeURIComponent(mainRole) + "; path=/; max-age=604800; SameSite=Lax";
       // Guardar perfil no sensible para hidratación de interfaz
       localStorage.setItem("recoffee_user_profile", JSON.stringify(response.data.user));
 
@@ -102,6 +104,8 @@ export const authService = {
       const response = await apiClient.get<User>("/api/auth/me");
       if (response.data && typeof window !== "undefined") {
         document.cookie = "recoffee_session=1; path=/; max-age=604800; SameSite=Lax";
+        const mainRole = response.data.roles?.[0] || "";
+        document.cookie = "recoffee_role=" + encodeURIComponent(mainRole) + "; path=/; max-age=604800; SameSite=Lax";
         localStorage.setItem("recoffee_user_profile", JSON.stringify(response.data));
       }
       return response.data;

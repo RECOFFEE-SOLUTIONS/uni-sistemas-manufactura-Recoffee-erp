@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   ShieldAlert,
@@ -164,24 +166,27 @@ export default function MesScrapPage() {
   return (
     <div className="space-y-6">
       {/* Encabezado */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-amber-500 uppercase tracking-wider mb-1">
             <ShieldAlert className="w-4 h-4" /> Módulo de Disposición — Scrap & Retrabajo
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Gestión de Disposiciones de No Conformidad
           </h1>
-          <p className="text-sm text-slate-400">
-            Tratamiento formal de lotes desviados: reactivación de operaciones para Retrabajo o desecho a Merma (Scrap).
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Retrabajo y merma de lotes
+            </p>
+            <InfoTooltip content="Tratamiento formal de lotes desviados: reactivación de operaciones para Retrabajo o desecho a Merma (Scrap)." />
+          </div>
         </div>
 
         {/* Acciones Rápidas */}
         <div className="flex items-center gap-3">
           <button
             onClick={loadNcrs}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition-colors"
+            className="p-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
             title="Refrescar lista"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-amber-400" : ""}`} />
@@ -190,14 +195,14 @@ export default function MesScrapPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-800 text-xs">
+      <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs text-xs">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-slate-400" />
           <span className="text-slate-300 font-medium">Estado:</span>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500"
           >
             <option value="ALL">Todos los Estados</option>
             <option value="Abierto">Abierto</option>
@@ -211,7 +216,7 @@ export default function MesScrapPage() {
           <select
             value={filterSeverity}
             onChange={(e) => setFilterSeverity(e.target.value)}
-            className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500"
+            className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-amber-500"
           >
             <option value="ALL">Todas las Severidades</option>
             <option value="Menor">Menor</option>
@@ -230,7 +235,7 @@ export default function MesScrapPage() {
         {ncrs.map((ncr) => (
           <div
             key={ncr.id}
-            className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 hover:border-slate-700 transition-all shadow-xl flex flex-col justify-between"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 space-y-4 hover:border-slate-700 transition-all shadow-xl flex flex-col justify-between"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -300,7 +305,7 @@ export default function MesScrapPage() {
       {/* Modal de Disposición */}
       {selectedNcr && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 max-w-lg w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-rose-400" />
@@ -328,9 +333,9 @@ export default function MesScrapPage() {
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-semibold text-slate-300 block">
+              <span className="text-xs font-semibold text-slate-300 block">
                 Selecciona la Disposición a Ejecutar:
-              </label>
+              </span>
 
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -368,26 +373,26 @@ export default function MesScrapPage() {
 
               {dispositionAction === "Retrabajo" ? (
                 <div>
-                  <label className="text-xs font-medium text-slate-300 block mb-1">
+                  <span className="text-xs font-medium text-slate-300 block mb-1">
                     Instrucciones de Retrabajo:
-                  </label>
+                  </span>
                   <textarea
                     rows={3}
                     value={reworkInstructions}
                     onChange={(e) => setReworkInstructions(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-500 resize-none"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="text-xs font-medium text-slate-300 block mb-1">
+                  <span className="text-xs font-medium text-slate-300 block mb-1">
                     Motivo de Merma / Scrap:
-                  </label>
+                  </span>
                   <textarea
                     rows={3}
                     value={scrapReason}
                     onChange={(e) => setScrapReason(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500 resize-none"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-rose-500 resize-none"
                   />
                 </div>
               )}
@@ -425,7 +430,7 @@ export default function MesScrapPage() {
       {/* Modal de Cierre Manual */}
       {ncrToClose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -437,16 +442,16 @@ export default function MesScrapPage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-300 block mb-1">
+              <span className="text-xs font-medium text-slate-300 block mb-1">
                 Documentar Resolución Técnica Implementada:
-              </label>
+              </span>
               <textarea
                 rows={4}
                 required
                 placeholder="Ej: Lote homogeneizado y estabilizado a 18% de humedad. Reinspección técnica conforme aprobada."
                 value={resolutionNotes}
                 onChange={(e) => setResolutionNotes(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 resize-none"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 resize-none"
               />
             </div>
 

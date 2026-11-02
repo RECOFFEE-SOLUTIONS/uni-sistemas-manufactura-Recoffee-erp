@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import {
@@ -448,9 +450,12 @@ export default function ProductionOrdersPage() {
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-2 font-heading">
             Centro de Control de Producción
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-            Orquestación en tiempo real: balance de masas, consumo a WIP (ALM-002), ejecución de ruta técnica y acreditación a Producto Terminado (ALM-003).
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Balance y manufactura continua
+            </p>
+            <InfoTooltip content="Orquestación en tiempo real: balance de masas, consumo a WIP (ALM-002), ejecución de ruta técnica y acreditación a Producto Terminado (ALM-003)." />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

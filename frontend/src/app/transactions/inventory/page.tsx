@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Boxes,
@@ -271,9 +273,12 @@ export default function InventoryKardexPage() {
           <h1 className="font-heading text-2xl md:text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             Kardex e Inventario Valorizado
           </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-            Trazabilidad continua de transacciones por lote, valoración PEPS/FIFO y existencias físicas multialmacén.
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Control inmutable y existencias
+            </p>
+            <InfoTooltip content="Trazabilidad continua de transacciones por lote, valoración PEPS/FIFO y existencias físicas multialmacén." />
+          </div>
         </div>
 
         {/* View Switcher & Refresh Pill */}

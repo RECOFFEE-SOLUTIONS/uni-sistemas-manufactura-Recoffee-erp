@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   ShoppingCart,
@@ -158,9 +160,12 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
             Gestión de Clientes
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Administración de clientes comerciales, cadenas agrícolas y compradores de sustrato orgánico.
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Cadenas y compradores comerciales
+            </p>
+            <InfoTooltip content="Administración de clientes comerciales, cadenas agrícolas y compradores de sustrato orgánico." />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

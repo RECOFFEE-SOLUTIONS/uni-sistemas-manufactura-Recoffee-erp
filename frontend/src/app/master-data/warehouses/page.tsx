@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Database,
@@ -149,9 +151,12 @@ export default function WarehousesPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
             Gestión de Almacenes (ALM)
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Centros de almacenamiento: Materias Primas (ALM-001), Proceso WIP (ALM-002), Terminado (ALM-003) e Insumos (ALM-004).
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Centros de almacenamiento industrial
+            </p>
+            <InfoTooltip content="Centros de almacenamiento: Materias Primas (ALM-001), Proceso WIP (ALM-002), Terminado (ALM-003) e Insumos (ALM-004)." />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

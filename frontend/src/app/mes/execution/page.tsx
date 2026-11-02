@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Activity,
@@ -166,27 +168,30 @@ export default function MesExecutionPage() {
   return (
     <div className="space-y-6">
       {/* Encabezado Principal */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-5 rounded-2xl border border-slate-800 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-amber-500 uppercase tracking-wider mb-1">
             <Activity className="w-4 h-4" /> Módulo MES — Manufactura en Piso de Planta
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
             Control de Ejecución de Operaciones (RO-1 a RO-8)
           </h1>
-          <p className="text-sm text-slate-400">
-            Captura de tiempos reales, asignación de operarios y seguimiento paso a paso de la hoja de ruta.
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Seguimiento y captura en planta
+            </p>
+            <InfoTooltip content="Captura de tiempos reales, asignación de operarios y seguimiento paso a paso de la hoja de ruta." />
+          </div>
         </div>
 
         {/* Selector de OP */}
         <div className="flex items-center gap-3">
           <div className="flex flex-col">
-            <label className="text-xs text-slate-400 font-medium mb-1">Orden de Producción Activa:</label>
+            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">Orden de Producción Activa:</span>
             <select
               value={selectedOrderId || ""}
               onChange={(e) => setSelectedOrderId(Number(e.target.value))}
-              className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors"
+              className="bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 transition-colors"
             >
               {orders.map((o) => (
                 <option key={o.id} value={o.id}>
@@ -197,7 +202,7 @@ export default function MesExecutionPage() {
           </div>
           <button
             onClick={() => selectedOrderId && loadMesDetail(selectedOrderId)}
-            className="p-2.5 mt-5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition-colors"
+            className="p-2.5 mt-5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-slate-700 transition-colors"
             title="Refrescar estado"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin text-amber-400" : ""}`} />
@@ -207,7 +212,7 @@ export default function MesExecutionPage() {
 
       {/* Tarjeta de Resumen de la Orden */}
       {mesDetail && (
-        <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <div className="bg-white dark:bg-gradient-to-br dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-4 border-b border-slate-800/80">
             <div>
               <span className="text-xs text-slate-500 font-medium uppercase">Orden de Producción</span>
@@ -216,12 +221,12 @@ export default function MesExecutionPage() {
             </div>
             <div>
               <span className="text-xs text-slate-500 font-medium uppercase">Producto a Fabricar</span>
-              <div className="text-sm font-semibold text-white mt-0.5">{mesDetail.itemName}</div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">{mesDetail.itemName}</div>
               <span className="text-xs text-slate-400">Código: {mesDetail.itemCode}</span>
             </div>
             <div>
               <span className="text-xs text-slate-500 font-medium uppercase">Meta de Producción</span>
-              <div className="text-sm font-semibold text-white mt-0.5">
+              <div className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">
                 {mesDetail.producedQuantity} / {mesDetail.plannedQuantity} {mesDetail.unitOfMeasure}s
               </div>
               <span className="text-xs text-emerald-400">En proceso de manufactura</span>
@@ -242,7 +247,7 @@ export default function MesExecutionPage() {
                 {mesDetail.completedOperationsCount} de {mesDetail.totalOperationsCount} operaciones ({mesDetail.progressPercentage}%)
               </span>
             </div>
-            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700/60 p-0.5">
+            <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-200 dark:border-slate-700/60 p-0.5">
               <div
                 className="bg-gradient-to-r from-amber-500 to-emerald-500 h-full rounded-full transition-all duration-500 shadow-sm shadow-amber-500/50"
                 style={{ width: `${mesDetail.progressPercentage}%` }}
@@ -255,7 +260,7 @@ export default function MesExecutionPage() {
       {/* Grid de Operaciones de Ruta (RO-1 a RO-8) */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <Factory className="w-4 h-4 text-amber-400" /> Operaciones de Piso de Planta (Secuencia RO-1 a RO-8)
           </h2>
           <span className="text-xs text-slate-400">
@@ -272,10 +277,10 @@ export default function MesExecutionPage() {
                   key={op.id}
                   className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-xl border transition-all ${
                     op.status === "Completado"
-                      ? "bg-slate-900/40 border-slate-800/80 text-slate-300"
+                      ? "bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800/80 text-slate-700 dark:text-slate-300"
                       : op.status === "Iniciado"
-                      ? "bg-slate-900 border-amber-500/50 shadow-md shadow-amber-950/20"
-                      : "bg-slate-900/70 border-slate-800 hover:border-slate-700"
+                      ? "bg-white dark:bg-slate-900 border-amber-500 shadow-sm ring-1 ring-amber-400/30"
+                      : "bg-white dark:bg-slate-900/70 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-xs"
                   }`}
                 >
                   {/* Secuencia y Nombre de Operación */}
@@ -389,7 +394,7 @@ export default function MesExecutionPage() {
       {/* Modal de Finalización de Operación */}
       {activeModalOp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -411,9 +416,9 @@ export default function MesExecutionPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-slate-300 block mb-1">
+                <span className="text-xs font-medium text-slate-300 block mb-1">
                   Minutos reales transcurridos (opcional, calculado automáticamente):
-                </label>
+                </span>
                 <input
                   type="number"
                   min="0"
@@ -421,14 +426,14 @@ export default function MesExecutionPage() {
                   placeholder={`Estándar: ${activeModalOp.standardLaborMinutes + activeModalOp.standardMachineMinutes} min`}
                   value={customActualMinutes}
                   onChange={(e) => setCustomActualMinutes(e.target.value === "" ? "" : Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-slate-300 block mb-1">
+                <span className="text-xs font-medium text-slate-300 block mb-1">
                   Notas u Observaciones del Operador:
-                </label>
+                </span>
                 <textarea
                   rows={3}
                   placeholder="Ej: Mezcla homogénea lograda sin grumos. Máquina operando a 1200 RPM..."

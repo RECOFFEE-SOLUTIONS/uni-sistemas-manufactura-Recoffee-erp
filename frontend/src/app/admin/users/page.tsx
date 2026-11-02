@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useState, useEffect, useMemo } from "react";
 import apiClient from "@/lib/api";
 import { UserSummary, AccessLogItem } from "@/types";
@@ -343,9 +345,12 @@ export default function UserManagementPage() {
               RBAC v2.4 Activo
             </span>
           </div>
-          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1">
-            Administración perimetral de credenciales, roles operativos y matriz granular de permisos por módulo.
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-slate-600 dark:text-neutral-400 font-medium">
+              Roles y permisos del sistema
+            </p>
+            <InfoTooltip content="Administración perimetral de credenciales, roles operativos y matriz granular de permisos por módulo." />
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -956,6 +961,7 @@ export default function UserManagementPage() {
                     <option value="Produccion">Operador / Supervisor Producción</option>
                     <option value="Calidad">Auditor de Calidad (RO-5)</option>
                     <option value="Almacen">Kardex & Almacén Central</option>
+                    <option value="Ventas">Ventas & Despacho Comercial</option>
                     <option value="Ventas">Ventas & Despacho</option>
                   </select>
                 </div>

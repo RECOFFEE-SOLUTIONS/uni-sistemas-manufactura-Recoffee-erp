@@ -1,5 +1,7 @@
 "use client";
 
+import InfoTooltip from "@/components/InfoTooltip";
+
 import React, { useEffect, useState, useMemo } from "react";
 import {
   Truck,
@@ -262,9 +264,12 @@ export default function SalesPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
             Órdenes de Venta y Despacho (FIFO)
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Validación de stock en ALM-003, asignación automática de lotes según antigüedad (FIFO) y salida comercial en Kardex.
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Despacho FIFO y salidas
+            </p>
+            <InfoTooltip content="Validación de stock en ALM-003, asignación automática de lotes según antigüedad (FIFO) y salida comercial en Kardex." />
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

@@ -32,10 +32,12 @@ interface NavItem {
   href: string;
   icon: React.ElementType;
   badge?: string;
+  roles: string[];
 }
 
 interface NavSection {
   title: string;
+  roles?: string[];
   items: NavItem[];
 }
 
@@ -69,61 +71,88 @@ export default function Sidebar({
     }));
   };
 
-  const sections: NavSection[] = [
+  // Definición de Secciones y Módulos con RBAC estricto
+  const allSections: NavSection[] = [
     {
       title: "General",
+      roles: ["Admin", "Produccion", "Calidad", "Almacen", "Ventas"],
       items: [
-        { name: "Inicio", href: "/", icon: LayoutDashboard },
+        { name: "Inicio", href: "/", icon: LayoutDashboard, roles: ["Admin", "Produccion", "Calidad", "Almacen", "Ventas"] },
       ],
     },
     {
       title: "M1: Maestros",
+      roles: ["Admin", "Almacen"],
       items: [
-        { name: "Almacenes", href: "/master-data/warehouses", icon: Database },
-        { name: "Artículos", href: "/master-data/items", icon: Boxes },
-        { name: "Proveedores", href: "/master-data/suppliers", icon: Truck },
-        { name: "Clientes", href: "/master-data/customers", icon: ShoppingCart },
+        { name: "Almacenes", href: "/master-data/warehouses", icon: Database, roles: ["Admin", "Almacen"] },
+        { name: "Artículos", href: "/master-data/items", icon: Boxes, roles: ["Admin", "Almacen"] },
+        { name: "Proveedores", href: "/master-data/suppliers", icon: Truck, roles: ["Admin"] },
+        { name: "Clientes", href: "/master-data/customers", icon: ShoppingCart, roles: ["Admin"] },
       ],
     },
     {
       title: "M2: Ingeniería",
+      roles: ["Admin", "Produccion"],
       items: [
-        { name: "Estructura BOM", href: "/engineering/bom", icon: Layers },
-        { name: "Rutas Técnicas", href: "/engineering/routes", icon: GitBranch },
+        { name: "Estructura BOM", href: "/engineering/bom", icon: Layers, roles: ["Admin", "Produccion"] },
+        { name: "Rutas Técnicas", href: "/engineering/routes", icon: GitBranch, roles: ["Admin", "Produccion"] },
       ],
     },
     {
       title: "M3: Transaccional",
+      roles: ["Admin", "Produccion", "Almacen", "Ventas"],
       items: [
-        { name: "Compras", href: "/transactions/purchases", icon: ShoppingCart },
-        { name: "Inventario / Kardex", href: "/transactions/inventory", icon: Boxes },
-        { name: "Producción", href: "/transactions/production", icon: Factory },
-        { name: "Ventas & Despacho", href: "/transactions/sales", icon: Truck },
+        { name: "Compras", href: "/transactions/purchases", icon: ShoppingCart, roles: ["Admin", "Almacen"] },
+        { name: "Inventario / Kardex", href: "/transactions/inventory", icon: Boxes, roles: ["Admin", "Almacen"] },
+        { name: "Producción", href: "/transactions/production", icon: Factory, roles: ["Admin", "Produccion"] },
+        { name: "Ventas & Despacho", href: "/transactions/sales", icon: Truck, roles: ["Admin", "Ventas"] },
       ],
     },
     {
       title: "M4: MES & Calidad",
+      roles: ["Admin", "Calidad"],
       items: [
-        { name: "Piso de Planta", href: "/mes/execution", icon: Activity },
-        { name: "Calidad (RO-5)", href: "/mes/quality", icon: ClipboardCheck },
-        { name: "Trazabilidad Lotes", href: "/mes/traceability", icon: GitBranch },
-        { name: "Scrap & Retrabajo", href: "/mes/scrap", icon: ShieldAlert },
+        { name: "Piso de Planta", href: "/mes/execution", icon: Activity, roles: ["Admin", "Calidad"] },
+        { name: "Calidad (RO-5)", href: "/mes/quality", icon: ClipboardCheck, roles: ["Admin", "Calidad"] },
+        { name: "Trazabilidad Lotes", href: "/mes/traceability", icon: GitBranch, roles: ["Admin", "Calidad"] },
+        { name: "Scrap & Retrabajo", href: "/mes/scrap", icon: ShieldAlert, roles: ["Admin", "Calidad"] },
       ],
     },
     {
       title: "M5: Telemetría & IIoT",
+      roles: ["Admin"],
       items: [
-        { name: "Curva Secado RO-3", href: "/iiot/sensor", icon: Radio, badge: "Live" },
-        { name: "Dashboard KPIs & OEE", href: "/iiot/kpis", icon: LayoutDashboard },
+        { name: "Curva Secado RO-3", href: "/iiot/sensor", icon: Radio, badge: "Live", roles: ["Admin"] },
+        { name: "Dashboard KPIs & OEE", href: "/iiot/kpis", icon: LayoutDashboard, roles: ["Admin"] },
       ],
     },
     {
       title: "M8: Administración",
+      roles: ["Admin"],
       items: [
-        { name: "Gestión de Usuarios", href: "/admin/users", icon: Users },
+        { name: "Gestión de Usuarios", href: "/admin/users", icon: Users, roles: ["Admin"] },
       ],
     },
   ];
+
+  // RBAC Visual: Lectura de roles y filtrado estricto
+  const userRoles = (user?.roles || []).map((r) => r.toLowerCase());
+  const isAdmin = userRoles.includes("admin") || userRoles.length === 0;
+
+  const filteredSections = allSections
+    .map((section) => {
+      // Filtrar ítems de la sección según el rol
+      const visibleItems = section.items.filter((item) => {
+        if (isAdmin) return true;
+        return item.roles.some((role) => userRoles.includes(role.toLowerCase()));
+      });
+
+      return {
+        ...section,
+        items: visibleItems,
+      };
+    })
+    .filter((section) => section.items.length > 0);
 
   return (
     <>
@@ -137,16 +166,16 @@ export default function Sidebar({
 
       {/* Sidebar Principal */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col justify-between border-r border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-[#11131a]/90 backdrop-blur-md transition-all duration-300 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col justify-between border-r border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-[#11131a]/90 backdrop-blur-md transition-all duration-300 ${
           collapsed ? "w-20" : "w-64"
         } ${
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } p-4`}
+        } p-4 shadow-sm`}
       >
         <div className="flex flex-col min-h-0 flex-1">
           {/* Brand Logo */}
           <div className="flex items-center gap-3 px-2 py-2 mb-4 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-500 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-sm">
               <Flame className="w-5 h-5 animate-pulse text-amber-500" />
             </div>
             {!collapsed && (
@@ -161,9 +190,9 @@ export default function Sidebar({
             )}
           </div>
 
-          {/* Navegación Modular */}
+          {/* Navegación Modular Filtrada por Roles */}
           <nav className="flex-1 overflow-y-auto space-y-3 pr-1 text-sm scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
-            {sections.map((section) => {
+            {filteredSections.map((section) => {
               const isSectionCollapsed = collapsedSections[section.title];
               return (
                 <div key={section.title} className="space-y-1">
@@ -171,7 +200,7 @@ export default function Sidebar({
                     <button
                       type="button"
                       onClick={() => toggleSection(section.title)}
-                      className="flex items-center justify-between w-full px-2 py-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                      className="flex items-center justify-between w-full px-2 py-1 text-[11px] font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wider hover:text-slate-800 dark:hover:text-slate-300 transition-colors cursor-pointer"
                     >
                       <span className="truncate">{section.title}</span>
                       {isSectionCollapsed ? (
@@ -197,8 +226,8 @@ export default function Sidebar({
                             }}
                             className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                               isActive
-                                ? "bg-amber-500/15 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 font-semibold shadow-xs"
-                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white"
+                                ? "bg-amber-500/15 dark:bg-amber-500/20 text-amber-800 dark:text-amber-400 font-semibold shadow-xs"
+                                : "text-slate-700 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white"
                             } ${collapsed ? "justify-center" : ""}`}
                           >
                             <Icon
@@ -212,7 +241,7 @@ export default function Sidebar({
                               <span className="truncate flex-1">{item.name}</span>
                             )}
                             {!collapsed && item.badge && (
-                              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-md shrink-0">
+                              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 rounded-md shrink-0">
                                 {item.badge}
                               </span>
                             )}
@@ -234,7 +263,7 @@ export default function Sidebar({
             type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             title="Alternar Tema Claro / Oscuro"
-            className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${
+            className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${
               collapsed ? "justify-center" : ""
             }`}
           >
