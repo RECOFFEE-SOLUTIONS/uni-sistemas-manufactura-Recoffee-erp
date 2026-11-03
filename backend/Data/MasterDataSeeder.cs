@@ -70,19 +70,19 @@ public static class MasterDataSeeder
             new Item
             {
                 Code = "MP-001",
-                Name = "Pulpa y Broza de Café",
+                Name = "Borra de Café Seca",
                 Category = "MP",
                 UnitOfMeasure = "kg",
                 Cost = 15.00m,
                 StandardCost = 15.00m,
-                Description = "Subproducto húmedo del despulpado de café fresco proveniente de beneficios locales.",
+                Description = "Subproducto húmedo del despulpado y borra de café seco de beneficios locales.",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },
             new Item
             {
                 Code = "MP-002",
-                Name = "Cáscara de Banano Deshidratada",
+                Name = "Cáscara de Banano Seca",
                 Category = "MP",
                 UnitOfMeasure = "kg",
                 Cost = 8.50m,
@@ -120,31 +120,31 @@ public static class MasterDataSeeder
             new Item
             {
                 Code = "EMP-001",
-                Name = "Saco Kraft / Bolsa de Empaque 5 kg",
+                Name = "Bolsa de Empaque 5 kg",
                 Category = "EMP",
                 UnitOfMeasure = "unidad",
                 Cost = 18.00m,
                 StandardCost = 18.00m,
-                Description = "Bolsa de papel kraft tricapa con barrera antihumedad resistente para empaque de 5kg.",
+                Description = "Bolsa de papel kraft tricapa biodegradable con barrera antihumedad para empaque de 5kg.",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },
             new Item
             {
                 Code = "EMP-002",
-                Name = "Etiqueta Informativa y Sellado",
+                Name = "Etiqueta ReCoffee Solutions",
                 Category = "EMP",
                 UnitOfMeasure = "unidad",
                 Cost = 4.50m,
                 StandardCost = 4.50m,
-                Description = "Etiqueta a color con datos técnicos, código de lote, precinto de seguridad e instrucciones.",
+                Description = "Etiqueta técnica corporativa a color con código de lote, precinto de seguridad e instrucciones.",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },
             new Item
             {
                 Code = "EMP-003",
-                Name = "Saco Kraft de 25 kg",
+                Name = "Saco 25 kg",
                 Category = "EMP",
                 UnitOfMeasure = "unidad",
                 Cost = 35.00m,
@@ -158,12 +158,12 @@ public static class MasterDataSeeder
             new Item
             {
                 Code = "SEM-001",
-                Name = "Mezcla Base Harina de Café",
+                Name = "Mezcla Base",
                 Category = "SEM",
                 UnitOfMeasure = "kg",
                 Cost = 65.75m,
                 StandardCost = 65.75m,
-                Description = "Subensamble obtenido de mezclar 3.5kg café, 0.5kg banano, 0.5kg papa y 0.5kg huevo procesado.",
+                Description = "Subensamble obtenido de mezclar 3.5kg borra de café, 0.5kg banano, 0.5kg papa y 0.5kg huevo.",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },

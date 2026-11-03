@@ -30,7 +30,7 @@ public static class BomDataSeeder
             return;
         }
 
-        // 1. BOM Nivel 1: Subensamble SEM-001 (Mezcla Base Harina de Café - Base 5kg)
+        // 1. BOM Nivel 1: Subensamble SEM-001 (Mezcla Base - Base 5kg)
         // Consume MP-001 (3.5kg), MP-002 (0.5kg), MP-003 (0.5kg), MP-004 (0.5kg)
         var bomSem = await context.BomHeaders
             .Include(b => b.Components)
@@ -43,7 +43,7 @@ public static class BomDataSeeder
                 Code = "BOM-SEM-001",
                 ParentItemId = semItem.Id,
                 Version = "v1.0",
-                Description = "Receta Estándar Subensamble Mezcla Base Harina de Café 5kg (BOM Nivel 1)",
+                Description = "Receta Estándar Subensamble Mezcla Base 5kg (BOM Nivel 1)",
                 BaseQuantity = 5.0m,
                 UnitOfMeasure = "kg",
                 IsActive = true,
@@ -57,7 +57,7 @@ public static class BomDataSeeder
                         UnitOfMeasure = "kg",
                         ScrapPercentage = 0.0m,
                         Level = 1,
-                        Notes = "Pulpa y broza de café (70%)"
+                        Notes = "Borra de café seca (70%)"
                     },
                     new BomComponent
                     {
@@ -66,7 +66,7 @@ public static class BomDataSeeder
                         UnitOfMeasure = "kg",
                         ScrapPercentage = 0.0m,
                         Level = 1,
-                        Notes = "Cáscara de banano deshidratada (10%)"
+                        Notes = "Cáscara de banano seca (10%)"
                     },
                     new BomComponent
                     {
@@ -125,7 +125,7 @@ public static class BomDataSeeder
                         UnitOfMeasure = "kg",
                         ScrapPercentage = 0.0m,
                         Level = 0,
-                        Notes = "Subensamble de mezcla base formulada y secada (5kg)"
+                        Notes = "Mezcla Base formulada y secada (5kg)"
                     },
                     new BomComponent
                     {
@@ -134,7 +134,7 @@ public static class BomDataSeeder
                         UnitOfMeasure = "unidad",
                         ScrapPercentage = 0.0m,
                         Level = 0,
-                        Notes = "Saco Kraft / Bolsa de empaque de 5kg"
+                        Notes = "Bolsa de Empaque 5 kg"
                     },
                     new BomComponent
                     {
@@ -143,7 +143,7 @@ public static class BomDataSeeder
                         UnitOfMeasure = "unidad",
                         ScrapPercentage = 0.0m,
                         Level = 0,
-                        Notes = "Etiqueta técnica frontal y precinto de sellado"
+                        Notes = "Etiqueta ReCoffee Solutions"
                     }
                 }
             };
@@ -186,7 +186,7 @@ public static class BomDataSeeder
                             UnitOfMeasure = "kg",
                             ScrapPercentage = 0.0m,
                             Level = 0,
-                            Notes = "Subensamble de mezcla base formulada y secada (25kg)"
+                            Notes = "Mezcla Base formulada y secada (25kg)"
                         },
                         new BomComponent
                         {
@@ -195,7 +195,7 @@ public static class BomDataSeeder
                             UnitOfMeasure = "unidad",
                             ScrapPercentage = 0.0m,
                             Level = 0,
-                            Notes = "Saco Kraft de 25 kg multicapa de alta resistencia"
+                            Notes = "Saco 25 kg"
                         },
                         new BomComponent
                         {
@@ -204,7 +204,7 @@ public static class BomDataSeeder
                             UnitOfMeasure = "unidad",
                             ScrapPercentage = 0.0m,
                             Level = 0,
-                            Notes = "Etiqueta técnica informativa y precinto de sellado"
+                            Notes = "Etiqueta ReCoffee Solutions"
                         }
                     }
                 };
