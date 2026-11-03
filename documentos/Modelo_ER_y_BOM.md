@@ -275,3 +275,15 @@ El ERP implementa una jerarquÃ­a real de 2 niveles procesada por el servicio r
 1. El usuario solicita producir N unidades de `PT-001` o `PT-002`.
 2. El motor de explosiÃ³n recorre el Ã¡rbol: multiplica la cantidad base del subensamble `SEM-001` por N.
 3. Luego, explosiona recursivamente `SEM-001` hacia sus 4 materias primas componentes (`MP-001` a `MP-004`), calculando las necesidades brutas y netas contra el inventario disponible en `ALM-001` y `ALM-002`.
+
+## NormalizaciÃ³n y Restricciones de Integridad Referencial (3FN)
+
+El diseÃ±o del esquema relacional en PostgreSQL sigue estrictamente los principios de normalizaciÃ³n hasta la **Tercera Forma Normal (3FN)**:
+1. **Primera Forma Normal (1FN):** Todos los atributos son atÃ³micos; no existen grupos repetitivos. Los componentes de una receta se desglosan en tuplas individuales dentro de `BomComponents`.
+2. **Segunda Forma Normal (2FN):** Se eliminan las dependencias funcionales parciales. Cada entidad posee una clave primaria simple (`Id`) o compuesta con significado unÃ­voco.
+3. **Tercera Forma Normal (3FN):** No existen dependencias transitivas. Los costos histÃ³ricos se registran de forma puntual en las transacciones del Kardex (`InventoryTransactions`) para evitar que cambios en `Items.Cost` alteren el costo de salidas previas.
+
+### Reglas de Integridad Referencial en `ReCoffeeDbContext`:
+* `BomHeaders` -> `BomComponents`: `ON DELETE CASCADE` (al eliminar una cabecera de receta se eliminan sus lÃ­neas).
+* `Items` -> `BomComponents`: `ON DELETE RESTRICT` (no se puede eliminar un artÃ­culo si forma parte activa de un BOM).
+* `Warehouses` -> `InventoryLots`: `ON DELETE RESTRICT` (un almacÃ©n con saldo no puede ser eliminado).
