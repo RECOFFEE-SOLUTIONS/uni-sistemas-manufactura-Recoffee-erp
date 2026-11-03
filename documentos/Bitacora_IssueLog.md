@@ -44,3 +44,5 @@ Durante el ciclo de desarrollo se resolvieron 4 problemas tÃ©cnicos de alta cr
 * **Causa RaÃ­z:** El endpoint de despacho realizaba un egreso genÃ©rico de existencias sin identificar el lote fÃ­sico de producto terminado en `ALM-003`.
 * **SoluciÃ³n TÃ©cnica:** Se integrÃ³ un query de selecciÃ³n por fecha de ingreso ascendente (`OrderBy(x => x.EntryDate)`), descontando existencias por lote y grabando transacciones de tipo `SALIDA_VENTA` con el nÃºmero de lote respectivo en el Kardex.
 * **VerificaciÃ³n:** Despacho de la orden `OV-20261021-0001` reflejado con lote exacto y egreso registrado en Kardex.
+
+*Nota de contacto DBA:* Kenneth Palacios (kenneth.alonso94arauz@gmail.com / @KennethP17).
