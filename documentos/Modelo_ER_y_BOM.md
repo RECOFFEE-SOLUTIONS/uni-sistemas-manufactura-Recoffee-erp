@@ -240,3 +240,38 @@ erDiagram
 2. **Warehouses (Almacenes FÃ­sicos):** Define los almacenes de RecepciÃ³n (`ALM-001`), ProducciÃ³n/WIP (`ALM-002`) y Producto Terminado (`ALM-003`).
 3. **InventoryLots (Lotes de Inventario):** Registro de existencias con trazabilidad de origen (proveedor o batch de producciÃ³n), fecha de ingreso, estado y saldo actual.
 4. **InventoryTransactions (Kardex Perpetuo):** Tabla inmutable tipo ledger contable. No admite modificaciones ni eliminaciones (`Append-Only`), garantizando auditorÃ­a estricta.
+
+## Detalle de la Estructura BOM Multinivel (Ãrbol a 2 Niveles Reales)
+
+El ERP implementa una jerarquÃ­a real de 2 niveles procesada por el servicio recursivo `BomExplosionService.cs`:
+
+### Nivel JerÃ¡rquico 0: Productos Terminados
+
+#### Variante 1: PT-001 - Abono OrgÃ¡nico ReCoffee Bolsa 5 kg
+* **SEM-001 (Mezcla Base Harina de CafÃ©):** 5.0 kg (Nivel 1) â€” Costo: C$ 39.50
+* **EMP-001 (Bolsa Kraft ReCoffee 5 kg):** 1.0 Unidad â€” Costo: C$ 6.00
+* **EMP-002 (Etiqueta Adhesiva ReCoffee):** 1.0 Unidad â€” Costo: C$ 3.00
+* **Costo Directo Total de Materiales (BOM PT-001):** C$ 48.50
+
+#### Variante 2: PT-002 - Abono OrgÃ¡nico ReCoffee Saco 25 kg
+* **SEM-001 (Mezcla Base Harina de CafÃ©):** 25.0 kg (Nivel 1) â€” Costo: C$ 197.50
+* **EMP-003 (Saco Polipropileno Tejido 25 kg):** 1.0 Unidad â€” Costo: C$ 18.00
+* **EMP-002 (Etiqueta Adhesiva ReCoffee):** 1.0 Unidad â€” Costo: C$ 3.00
+* **Costo Directo Total de Materiales (BOM PT-002):** C$ 218.50
+
+---
+
+### Nivel JerÃ¡rquico 1: Subensamble Base SEM-001 (Mezcla Base Harina de CafÃ© - 5 kg)
+
+| CÃ³digo | DescripciÃ³n de Materia Prima | Cantidad | % Masa | Costo Unitario | Costo Extendido |
+|---|---|---|---|---|---|
+| **MP-001** | Borra de CafÃ© Seca (10% Humedad residual) | 3.50 kg | 70.0% | C$ 6.00 / kg | C$ 21.00 |
+| **MP-002** | CÃ¡scara de PlÃ¡tano Seca (Potasio K+) | 0.50 kg | 10.0% | C$ 12.00 / kg | C$ 6.00 |
+| **MP-003** | CÃ¡scara de Papa Seca (FÃ³sforo P+) | 0.50 kg | 10.0% | C$ 13.00 / kg | C$ 6.50 |
+| **MP-004** | CÃ¡scara de Huevo Molida (Calcio Ca++) | 0.50 kg | 10.0% | C$ 12.00 / kg | C$ 6.00 |
+| **TOTAL** | **SEM-001 Batch Base** | **5.00 kg** | **100.0%** | **C$ 7.90 / kg** | **C$ 39.50** |
+
+### Algoritmo de ExplosiÃ³n de Requerimientos
+1. El usuario solicita producir N unidades de `PT-001` o `PT-002`.
+2. El motor de explosiÃ³n recorre el Ã¡rbol: multiplica la cantidad base del subensamble `SEM-001` por N.
+3. Luego, explosiona recursivamente `SEM-001` hacia sus 4 materias primas componentes (`MP-001` a `MP-004`), calculando las necesidades brutas y netas contra el inventario disponible en `ALM-001` y `ALM-002`.
