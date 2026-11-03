@@ -287,3 +287,14 @@ El diseÃ±o del esquema relacional en PostgreSQL sigue estrictamente los princi
 * `BomHeaders` -> `BomComponents`: `ON DELETE CASCADE` (al eliminar una cabecera de receta se eliminan sus lÃ­neas).
 * `Items` -> `BomComponents`: `ON DELETE RESTRICT` (no se puede eliminar un artÃ­culo si forma parte activa de un BOM).
 * `Warehouses` -> `InventoryLots`: `ON DELETE RESTRICT` (un almacÃ©n con saldo no puede ser eliminado).
+
+## Mapeo de Ãndices y OptimizaciÃ³n de Consultas en DbContext
+
+Para soportar tiempos de respuesta menores a 50 ms en operaciones de piso de planta (MES) y transacciones de Kardex:
+* **Ãndices Ãšnicos (`UNIQUE INDEX`):**
+  * `IX_Items_Code`: Acceso directo por SKU en lectura de cÃ³digos de barra.
+  * `IX_InventoryLots_LotNumber`: ValidaciÃ³n instantÃ¡nea para evitar duplicidad de lotes.
+  * `IX_BomHeaders_Code` y `IX_RoutingHeaders_Code`: IndexaciÃ³n de recetas y hojas de ruta.
+* **Ãndices de Cobertura para Trazabilidad:**
+  * `IX_InventoryTransactions_ItemId_TransactionDate`: Acelera la generaciÃ³n de reportes de Kardex cronolÃ³gico.
+  * `IX_InventoryLots_ItemId_WarehouseId_Status`: Optimiza la bÃºsqueda FIFO de lotes disponibles en almacenes.
