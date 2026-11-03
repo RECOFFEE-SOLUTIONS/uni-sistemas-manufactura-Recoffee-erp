@@ -298,3 +298,50 @@ Para soportar tiempos de respuesta menores a 50 ms en operaciones de piso de pla
 * **Ãndices de Cobertura para Trazabilidad:**
   * `IX_InventoryTransactions_ItemId_TransactionDate`: Acelera la generaciÃ³n de reportes de Kardex cronolÃ³gico.
   * `IX_InventoryLots_ItemId_WarehouseId_Status`: Optimiza la bÃºsqueda FIFO de lotes disponibles en almacenes.
+
+## Script SQL de AuditorÃ­a y VerificaciÃ³n de BOM Multinivel
+
+Consulta recursiva CTE (Common Table Expression) implementada en PostgreSQL para auditar la integridad de las 2 variantes de producto terminado (`PT-001` y `PT-002`):
+
+```sql
+WITH RECURSIVE BomTree AS (
+    -- Nivel 0: Producto Terminado
+    SELECT 
+        bh.Id AS BomHeaderId,
+        i_parent.Code AS ParentCode,
+        i_parent.Name AS ParentName,
+        i_comp.Code AS ComponentCode,
+        i_comp.Name AS ComponentName,
+        bc.Quantity,
+        bc.UnitOfMeasure,
+        0 AS HierarchyLevel,
+        CAST(i_parent.Code || ' -> ' || i_comp.Code AS VARCHAR(500)) AS Path
+    FROM BomHeaders bh
+    JOIN Items i_parent ON bh.ParentItemId = i_parent.Id
+    JOIN BomComponents bc ON bc.BomHeaderId = bh.Id
+    JOIN Items i_comp ON bc.ComponentItemId = i_comp.Id
+    WHERE i_parent.Code IN ('PT-001', 'PT-002')
+
+    UNION ALL
+
+    -- Nivel 1: Subensambles (SEM-001)
+    SELECT 
+        bh_sub.Id AS BomHeaderId,
+        bt.ComponentCode AS ParentCode,
+        bt.ComponentName AS ParentName,
+        i_sub.Code AS ComponentCode,
+        i_sub.Name AS ComponentName,
+        bc_sub.Quantity * bt.Quantity AS Quantity,
+        bc_sub.UnitOfMeasure,
+        bt.HierarchyLevel + 1,
+        CAST(bt.Path || ' -> ' || i_sub.Code AS VARCHAR(500)) AS Path
+    FROM BomTree bt
+    JOIN Items i_sem ON bt.ComponentCode = i_sem.Code
+    JOIN BomHeaders bh_sub ON bh_sub.ParentItemId = i_sem.Id
+    JOIN BomComponents bc_sub ON bc_sub.BomHeaderId = bh_sub.Id
+    JOIN Items i_sub ON bc_sub.ComponentItemId = i_sub.Id
+)
+SELECT HierarchyLevel, ParentCode, ComponentCode, ComponentName, Quantity, UnitOfMeasure, Path
+FROM BomTree
+ORDER BY ParentCode, HierarchyLevel, ComponentCode;
+```
