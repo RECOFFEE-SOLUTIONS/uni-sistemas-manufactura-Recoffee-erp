@@ -1,8 +1,8 @@
-# Modelo Entidad-Relación (E-R) y Estructura BOM del ERP ReCoffee
+﻿# Modelo Entidad-RelaciÃ³n (E-R) y Diccionario de Datos del ERP ReCoffee
 
 El sistema ERP ReCoffee implementa una arquitectura relacional normalizada en PostgreSQL que soporta la norma ISA-95 (Nivel 3 - MES y Nivel 4 - ERP Transaccional).
 
-## Diagrama Entidad-Relación (Mermaid)
+## Diagrama Entidad-RelaciÃ³n (Mermaid)
 
 ```mermaid
 erDiagram
@@ -234,23 +234,9 @@ erDiagram
 }
 ```
 
-## Lista de Materiales (BOM) Multinivel
+## Diccionario de Datos de Entidades Principales
 
-El ERP implementa una jerarquía real de 2 niveles (Nivel 0 y Nivel 1) con algoritmo recursivo de explosión de requerimientos (`BomExplosionService`):
-
-### 1. PT-001 (Abono Orgánico ReCoffee Bolsa 5 kg) - Nivel 0
-* **SEM-001** (Mezcla Base Harina de Café): 5.0 kg (Nivel 1)
-* **EMP-001** (Bolsa Kraft 5 kg): 1 Unidad
-* **EMP-002** (Etiqueta ReCoffee Solutions): 1 Unidad
-
-### 2. PT-002 (Abono Orgánico ReCoffee Saco 25 kg) - Nivel 0
-* **SEM-001** (Mezcla Base Harina de Café): 25.0 kg (Nivel 1)
-* **EMP-003** (Saco Polipropileno 25 kg): 1 Unidad
-* **EMP-002** (Etiqueta ReCoffee Solutions): 1 Unidad
-
-### 3. Subensamble SEM-001 (Mezcla Base Harina de Café) - Nivel 1
-* **MP-001** (Borra de Café Seca 10% H): 3.5 kg (70.0%)
-* **MP-002** (Cáscara de Plátano Seca): 0.5 kg (10.0%)
-* **MP-003** (Cáscara de Papa Seca): 0.5 kg (10.0%)
-* **MP-004** (Cáscara de Huevo Triturada): 0.5 kg (10.0%)
-* **Total Base:** 5.0 kg (100.0%)
+1. **Items (ArtÃ­culos Maestros):** Almacena materias primas (`MP`), subensambles (`SEM`), empaques (`EMP`) y productos terminados (`PT`). Soporta costos unitarios promedio y estÃ¡ndar.
+2. **Warehouses (Almacenes FÃ­sicos):** Define los almacenes de RecepciÃ³n (`ALM-001`), ProducciÃ³n/WIP (`ALM-002`) y Producto Terminado (`ALM-003`).
+3. **InventoryLots (Lotes de Inventario):** Registro de existencias con trazabilidad de origen (proveedor o batch de producciÃ³n), fecha de ingreso, estado y saldo actual.
+4. **InventoryTransactions (Kardex Perpetuo):** Tabla inmutable tipo ledger contable. No admite modificaciones ni eliminaciones (`Append-Only`), garantizando auditorÃ­a estricta.
