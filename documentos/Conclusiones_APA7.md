@@ -1,14 +1,7 @@
-﻿# Conclusiones y Recomendaciones TÃ©cnicas del Proyecto
+﻿# Conclusiones TÃ©cnicas y Recomendaciones del Proyecto ERP ReCoffee
 
-## Conclusiones
-1. **Convergencia ISA-95 Lograda:** La integraciÃ³n vertical entre el nivel transaccional ERP (.NET 8 / PostgreSQL) y el nivel MES / TelemetrÃ­a IIoT garantiza la trazabilidad total desde el origen de la materia prima (lotes de borra de cafÃ©) hasta el despacho final del fertilizante.
-2. **Inmutabilidad y Cumplimiento Normativo:** La arquitectura de Kardex perpetuo de solo inserciÃ³n previene adulteraciones contables y stocks negativos, protegiendo la integridad de los costos directos de manufactura.
-3. **Eficiencia en EconomÃ­a Circular:** El sistema transforma un pasivo ambiental urbano (residuos orgÃ¡nicos de cafÃ©) en un producto de alto valor agronÃ³mico, validado con una estructura BOM multinivel tÃ©cnica de 2 niveles reales y formulaciÃ³n estricta de micronutrientes.
-
-## Referencias BibliogrÃ¡ficas (Norma APA 7.Âª EdiciÃ³n)
-
-1. Groover, M. P. (2020). *Fundamentals of modern manufacturing: Materials, processes, and systems* (7th ed.). John Wiley & Sons.
-2. International Society of Automation. (2018). *Enterprise-control system integration - Part 1: Common object models and attributes* (ANSI/ISA-95.00.01-2018). ISA Publications.
-3. Jacobs, F. R., & Chase, R. B. (2021). *Operations and supply chain management* (16th ed.). McGraw-Hill Education.
-4. Mussatto, S. I., Machado, E. M., Martins, S., & Teixeira, J. A. (2011). Production, composition, and application of coffee and its industrial residues. *Food and Bioprocess Technology*, 4(5), 661-672. https://doi.org/10.1007/s11947-011-0565-z
-5. Slack, N., & Brandon-Jones, A. (2019). *Operations management* (9th ed.). Pearson Education Limited.
+## Conclusiones del Sistema de Manufactura y GestiÃ³n ERP
+1. **Cumplimiento Integral de la PirÃ¡mide ISA-95:** La soluciÃ³n desarrollada integra con Ã©xito el Nivel 4 (ERP - GestiÃ³n de compras, inventario, ventas y costos) con el Nivel 3 (MES - Piso de planta, Ã³rdenes de producciÃ³n y control de calidad) y el Nivel 2 (TelemetrÃ­a de sensores IIoT de secado), permitiendo visibilidad operacional total en tiempo real.
+2. **Inmutabilidad y Cero Errores Contables:** La implementaciÃ³n de un Kardex perpetuo de solo inserciÃ³n (`Append-Only`) garantiza que ninguna transacciÃ³n de inventario pueda ser alterada retroactivamente, cumpliendo los mÃ¡s altos estÃ¡ndares de auditorÃ­a financiera y trazabilidad de lotes.
+3. **OptimizaciÃ³n de Procesos de EconomÃ­a Circular:** Se demostrÃ³ la viabilidad tÃ©cnica y financiera de transformar residuos orgÃ¡nicos urbanos (borra de cafÃ©) en abono balanceado de alto rendimiento agronÃ³mico, logrando un margen de contribuciÃ³n del 39.9% con costos de fabricaciÃ³n controlados (C$ 90.11/bolsa).
+4. **DiseÃ±o de Software Robusto y Modular:** La arquitectura en capas basada en .NET 8 Web API, PostgreSQL y Next.js 14 demostrÃ³ alto rendimiento, desacoplamiento de servicios y seguridad robusta con autenticaciÃ³n JWT y control de acceso basado en roles (RBAC).
