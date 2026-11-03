@@ -1,29 +1,33 @@
 ﻿# AnÃ¡lisis de TelemetrÃ­a IIoT y Control de Procesos (M5)
 
-## SimulaciÃ³n Acelerada de Secado (OperaciÃ³n RO-3)
-La operaciÃ³n RO-3 (Secado TÃ©rmico) es el cuello de botella fÃ­sico de la planta de producciÃ³n. Para garantizar el cumplimiento del control de calidad RO-5:
-* **Sensor TÃ©rmico (PT-100 / Termocupla):** Monitorea la temperatura en la cÃ¡mara del secador rotativo, manteniendo el rango Ã³ptimo de ^\circ\text{C} \pm 2^\circ\text{C}$.
-* **Sensor de Humedad Capacitivo:** Registra la disminuciÃ³n exponencial de la humedad relativa del lecho de borra desde el 65.0% inicial hasta el 10.0% final requerido para la mezcla balanceada.
-* **IntegraciÃ³n ISA-95:** Los paquetes de datos generados en tiempo real se almacenan en la tabla IiotTelemetryLogs vinculados a la orden de producciÃ³n activa y al lote en proceso.
+## SimulaciÃ³n Acelerada y TelemetrÃ­a del Secador Rotativo (RO-3)
 
-## Dashboard Gerencial de Indicadores Clave (KPIs & OEE)
+La operaciÃ³n unitaria de Secado TÃ©rmico (`RO-3`) constituye la etapa de mayor consumo energÃ©tico y control crÃ­tico de variables fÃ­sicas de la planta ReCoffee. 
 
-El mÃ³dulo de inteligencia operacional procesa 4 mÃ©tricas de alto impacto para la toma de decisiones:
+### ParÃ¡metros de Monitoreo en Tiempo Real
+* **Sensor TÃ©rmico (PT-100 / Termocupla Tipo K):** Mantiene la temperatura dentro de la cÃ¡mara de secado a 75Â°C +/- 2Â°C. Si la temperatura supera los 85Â°C, se activa el interlock de seguridad para prevenir la pirÃ³lisis de la materia orgÃ¡nica.
+* **Sensor de Humedad Capacitivo de Alta Temperatura:** Mide la humedad del lecho granular de borra de cafÃ© en descenso continuo desde 65.0% inicial hasta el lÃ­mite normativo de 10.0%.
 
-1. **Rendimiento de Proceso (Yield = 98.0%):**
-   Refleja la eficiencia de conversiÃ³n de materia prima seca en producto terminado. El scrap promedio se mantiene acotado al 2.0%, generado principalmente en pÃ©rdidas por molienda (RO-4) y envasado (RO-6).
+### Modelo MatemÃ¡tico de Secado en Lecho MÃ³vil
+La tasa de pÃ©rdida de humedad sigue una ecuaciÃ³n de decaimiento exponencial conforme a la ley de secado en rÃ©gimen decreciente:
 
-2. **Costo Unitario de Manufactura (C\$ 90.11 por bolsa de 5 kg):**
-   Compuesto por:
-   * Costos Directos de Materiales (MP + Empaques): C\$ 48.50
-   * Mano de Obra Directa (MOD en envasado y mezclado): C\$ 24.15
-   * Costos Indirectos de FabricaciÃ³n (EnergÃ­a elÃ©ctrica y gas de secado): C\$ 17.46
+$$H(t) = H_{final} + (H_{inicial} - H_{final}) \cdot e^{-k \cdot t}$$
 
-3. **RotaciÃ³n de Inventario (2.50x por ciclo):**
-   Indica una alta velocidad de evacuaciÃ³n del producto terminado en ALM-003 hacia el canal de distribuciÃ³n agrÃ­cola, evitando costos de almacenamiento prolongado y degradaciÃ³n orgÃ¡nica.
+Donde:
+* H_{inicial} = 65.0%
+* H_{final} = 10.0%
+* k = 0.0125 min^-1 (constante de secado experimental para borra de cafÃ© a 75Â°C)
+* t = tiempo de residencia efectivo (240 minutos nominales)
 
-4. **Efectividad Global del Equipo (OEE = 85.0%):**
-   * **Disponibilidad:** 92.0% (mantenimiento preventivo quincenal del secador y molino).
-   * **Rendimiento:** 95.0% (operaciÃ³n a velocidad nominal del tambor rotativo).
-   * **Calidad:** 97.2% (lotes conformes en primera pasada sin retrabajo).
-   * $\text{OEE} = 0.92 \times 0.95 \times 0.972 \approx 85.0\%$ (Clase Mundial).
+### Formato del Paquete de TelemetrÃ­a JSON (EstÃ¡ndar MQTT / HTTP)
+```json
+{
+  "productionOrderId": 1,
+  "lotNumber": "LOT-MP-001-SEC",
+  "operationCode": "RO-3",
+  "sensorId": "SENSOR-TEMP-DRY-01",
+  "temperatureCelsius": 75.4,
+  "moisturePercent": 10.2,
+  "timestamp": "2026-10-21T14:35:00Z"
+}
+```
