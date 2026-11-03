@@ -13,3 +13,19 @@ m_{\text{hÃºmeda}} = \frac{m_{\text{sÃ³lidos}}}{1 - H_{\text{inicial}}} = \f
 
 ### Masa de Agua Evaporada ({\text{agua}}$):
 m_{\text{agua}} = 9.00\,\text{kg} - 3.50\,\text{kg} = \mathbf{5.50\,\text{kg de vapor de agua por bolsa}}
+
+## Takt Time y DistribuciÃ³n de Planta (Layout Industrial)
+
+### 1. CÃ¡lculo del Takt Time
+* **Demanda de Mercado Programada:** 40 bolsas (5 kg) por semana de trabajo.
+* **Tiempo Disponible de ProducciÃ³n:** 5 dÃ­as/semana $\times$ 8 horas/dÃ­a = 40 horas laborables netas (160 horas efectivas por lote mensual).
+* **Takt Time Nominal:**
+  \text{Takt Time} = \frac{\text{Tiempo Operativo Disponible}}{\text{Demanda Requerida}} = \frac{160\,\text{horas}}{40\,\text{bolsas}} = \mathbf{4.0\,\text{horas/bolsa}}
+
+El ciclo de la operacion crÃ­tica RO-3 (Secado TÃ©rmico en lote de tambor) calza exactamente con la cadencia del Takt Time de la planta, asegurando flujo continuo sin sobreproducciÃ³n.
+
+### 2. DistribuciÃ³n Espacial de la Planta (Layout)
+La planta estÃ¡ estructurada en 3 naves funcionales comunicadas mediante pasillos de transporte de material:
+* **Nave 1 - RecepciÃ³n y Secado:** Aloja el almacÃ©n ALM-001 (Materia Prima HÃºmeda), la estaciÃ³n de clasificaciÃ³n y el secador rotativo continuo (RO-3).
+* **Nave 2 - Molienda, Mezclado y Envasado:** Zona limpia que contiene el molino de martillos (RO-4), la mezcladora de doble listÃ³n (RO-5) y la tolva dosificadora de envasado (RO-6).
+* **Nave 3 - AlmacÃ©n de Producto Terminado y Despacho:** Contiene el almacÃ©n ALM-003, racks certificados para paletizado y muelle de carga vehicular para Ã³rdenes de venta.
