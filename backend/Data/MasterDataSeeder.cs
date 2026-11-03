@@ -39,7 +39,7 @@ public static class MasterDataSeeder
                 Code = "ALM-003",
                 Name = "Almacén de Producto Terminado (PT)",
                 Location = "Nave C - Zona de Despacho",
-                Description = "Bolsas de 5kg de Harina/Abono Orgánico certificadas listas para venta y distribución.",
+                Description = "Bolsas de 5kg y Sacos de 25kg de Abono Orgánico certificados listos para venta y distribución.",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },
@@ -120,9 +120,9 @@ public static class MasterDataSeeder
             new Item
             {
                 Code = "EMP-001",
-                Name = "Saco Kraft Biodegradable 5kg",
+                Name = "Saco Kraft / Bolsa de Empaque 5 kg",
                 Category = "EMP",
-                UnitOfMeasure = "bolsa",
+                UnitOfMeasure = "unidad",
                 Cost = 18.00m,
                 StandardCost = 18.00m,
                 Description = "Bolsa de papel kraft tricapa con barrera antihumedad resistente para empaque de 5kg.",
@@ -141,12 +141,24 @@ public static class MasterDataSeeder
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             },
+            new Item
+            {
+                Code = "EMP-003",
+                Name = "Saco Kraft de 25 kg",
+                Category = "EMP",
+                UnitOfMeasure = "unidad",
+                Cost = 35.00m,
+                StandardCost = 35.00m,
+                Description = "Saco industrial kraft multicapa reforzado para presentación de 25kg.",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            },
 
             // Subensamble / Semielaborado (SEM)
             new Item
             {
                 Code = "SEM-001",
-                Name = "Mezcla Base Harina de Café 5kg",
+                Name = "Mezcla Base Harina de Café",
                 Category = "SEM",
                 UnitOfMeasure = "kg",
                 Cost = 65.75m,
@@ -156,11 +168,11 @@ public static class MasterDataSeeder
                 CreatedAt = DateTime.UtcNow
             },
 
-            // Producto Terminado (PT)
+            // Productos Terminados (PT)
             new Item
             {
                 Code = "PT-001",
-                Name = "Abono Orgánico ReCoffee 5kg",
+                Name = "Abono Orgánico ReCoffee Bolsa 5 kg",
                 Category = "PT",
                 UnitOfMeasure = "bolsa",
                 Cost = 88.25m,
@@ -168,15 +180,34 @@ public static class MasterDataSeeder
                 Description = "Bolsa terminada de 5kg lista para comercialización, sellada y etiquetada.",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
+            },
+            new Item
+            {
+                Code = "PT-002",
+                Name = "Abono Orgánico ReCoffee Saco 25 kg",
+                Category = "PT",
+                UnitOfMeasure = "saco",
+                Cost = 363.75m,
+                StandardCost = 363.75m,
+                Description = "Saco industrial terminado de 25kg listo para comercialización a gran escala agrícola.",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
             }
         };
 
         foreach (var i in items)
         {
-            if (!await context.Items.AnyAsync(x => x.Code == i.Code))
+            var existing = await context.Items.FirstOrDefaultAsync(x => x.Code == i.Code);
+            if (existing == null)
             {
                 context.Items.Add(i);
                 logger.LogInformation("Sembrando Artículo: {Code} ({Category}) - {Name}", i.Code, i.Category, i.Name);
+            }
+            else
+            {
+                existing.Name = i.Name;
+                existing.Description = i.Description;
+                existing.UnitOfMeasure = i.UnitOfMeasure;
             }
         }
 

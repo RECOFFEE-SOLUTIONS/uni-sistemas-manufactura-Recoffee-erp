@@ -395,30 +395,33 @@ public static class TransactionalE2ESeeder
         }
 
         // =========================================================================
-        // ETAPA 3: ÓRDENES DE VENTA Y DESPACHO FIFO A 2 CLIENTES
-        // - Cliente 1 (CLI-001 Vivero El Roble): 25 bolsas de PT-001
-        // - Cliente 2 (CLI-002 AgroComercial Norte): 15 bolsas de PT-001
-        // Total Despachado: 40 bolsas (consumo total del lote LOTE-PT-001-E2E-001)
+        // ETAPA 3: ÓRDENES DE VENTA Y DESPACHO FIFO (CRITERIO C2)
+        // - Orden 1 (CLI-001 SOPPEXCCA): 25 bolsas -> DESPACHADA CON ÉXITO
+        // - Orden 2 (CLI-002 Supermercados La Colonia): 15 bolsas -> CONFIRMADA (PENDIENTE DESPACHO)
         // =========================================================================
 
         DateTime saleDate = baseDate.AddDays(2).AddHours(8);
         DateTime dispatchDate1 = baseDate.AddDays(2).AddHours(10);
         DateTime dispatchDate2 = baseDate.AddDays(2).AddHours(14);
+        decimal unitPrice = pt001.StandardCost > 0 ? pt001.StandardCost : 75.00m;
 
-        // 3.1 OV-E2E-0001 (CLI-001: 25 bolsas)
-        if (!await context.SalesOrders.AnyAsync(s => s.OrderNumber == "OV-E2E-0001"))
+        // 3.1 OV-20261021-0001 (CLI-001 Cooperativa SOPPEXCCA: 25 bolsas) - DESPACHADA
+        var ov1 = await context.SalesOrders
+            .Include(s => s.Lines)
+            .FirstOrDefaultAsync(s => s.OrderNumber == "OV-20261021-0001" || s.OrderNumber == "OV-E2E-0001");
+
+        if (ov1 == null)
         {
-            decimal unitPrice = pt001.StandardCost > 0 ? pt001.StandardCost : 75.00m;
-            var ov1 = new SalesOrder
+            ov1 = new SalesOrder
             {
-                OrderNumber = "OV-E2E-0001",
+                OrderNumber = "OV-20261021-0001",
                 CustomerId = cli001.Id,
                 OrderDate = saleDate,
                 DeliveryDate = dispatchDate1,
                 DispatchedDate = dispatchDate1,
                 Status = "Despachada",
                 TotalAmount = 25.0m * unitPrice,
-                Notes = "Despacho comercial de 25 bolsas de sustrato compostable para paisajismo.",
+                Notes = "Despacho comercial de 25 bolsas de sustrato compostable para Cooperativa SOPPEXCCA.",
                 CreatedAt = saleDate,
                 Lines = new List<SalesOrderLine>
                 {
@@ -441,24 +444,58 @@ public static class TransactionalE2ESeeder
 
             // Descontar 25 bolsas de ALM-003 por FIFO y registrar salida de venta en Kardex
             await DeductStockAndRegisterKardex(context, almPt.Id, pt001.Id, ptLotNumber, 25.0m, pt001.Cost,
-                dispatchDate1, "SALIDA_VENTA", "OV-E2E-0001",
-                $"Despacho por venta a {cli001.Name} ({cli001.Code}) bajo OV-E2E-0001. Lote FIFO: {ptLotNumber}.", "Módulo de Ventas");
+                dispatchDate1, "SALIDA_VENTA", "OV-20261021-0001",
+                $"Despacho por venta a {cli001.Name} ({cli001.Code}) bajo OV-20261021-0001. Lote FIFO: {ptLotNumber}.", "Módulo de Ventas");
+        }
+        else
+        {
+            ov1.OrderNumber = "OV-20261021-0001";
+            ov1.CustomerId = cli001.Id;
+            ov1.Status = "Despachada";
+            ov1.DispatchedDate = dispatchDate1;
+            foreach (var line in ov1.Lines)
+            {
+                line.IsDispatched = true;
+                line.DispatchedQuantity = line.Quantity;
+                line.AssignedLotNumber = $"{ptLotNumber} (25.0 bolsa)";
+            }
+
+            var kardexTx = await context.InventoryTransactions
+                .Where(t => t.ReferenceNumber == "OV-E2E-0001" || t.ReferenceNumber == "OV-20261021-0001")
+                .ToListAsync();
+
+            if (!kardexTx.Any())
+            {
+                await DeductStockAndRegisterKardex(context, almPt.Id, pt001.Id, ptLotNumber, 25.0m, pt001.Cost,
+                    dispatchDate1, "SALIDA_VENTA", "OV-20261021-0001",
+                    $"Despacho por venta a {cli001.Name} ({cli001.Code}) bajo OV-20261021-0001. Lote FIFO: {ptLotNumber}.", "Módulo de Ventas");
+            }
+            else
+            {
+                foreach (var tx in kardexTx)
+                {
+                    tx.ReferenceNumber = "OV-20261021-0001";
+                }
+            }
         }
 
-        // 3.2 OV-E2E-0002 (CLI-002: 15 bolsas)
-        if (!await context.SalesOrders.AnyAsync(s => s.OrderNumber == "OV-E2E-0002"))
+        // 3.2 OV-20261021-0002 (CLI-002 Supermercados La Colonia: 15 bolsas) - CONFIRMADA (PENDIENTE DESPACHO)
+        var ov2 = await context.SalesOrders
+            .Include(s => s.Lines)
+            .FirstOrDefaultAsync(s => s.OrderNumber == "OV-20261021-0002" || s.OrderNumber == "OV-E2E-0002");
+
+        if (ov2 == null)
         {
-            decimal unitPrice = pt001.StandardCost > 0 ? pt001.StandardCost : 75.00m;
-            var ov2 = new SalesOrder
+            ov2 = new SalesOrder
             {
-                OrderNumber = "OV-E2E-0002",
+                OrderNumber = "OV-20261021-0002",
                 CustomerId = cli002.Id,
                 OrderDate = saleDate,
                 DeliveryDate = dispatchDate2,
-                DispatchedDate = dispatchDate2,
-                Status = "Despachada",
+                DispatchedDate = null,
+                Status = "Confirmada",
                 TotalAmount = 15.0m * unitPrice,
-                Notes = "Despacho comercial de 15 bolsas de sustrato compostable para distribución regional.",
+                Notes = "Pedido comercial de 15 bolsas de sustrato compostable para distribución regional.",
                 CreatedAt = saleDate,
                 Lines = new List<SalesOrderLine>
                 {
@@ -469,20 +506,26 @@ public static class TransactionalE2ESeeder
                         UnitPrice = unitPrice,
                         Subtotal = 15.0m * unitPrice,
                         UnitOfMeasure = "bolsa",
-                        DispatchedQuantity = 15.0m,
-                        IsDispatched = true,
-                        AssignedLotNumber = $"{ptLotNumber} (15.0 bolsa)"
+                        DispatchedQuantity = 0.0m,
+                        IsDispatched = false,
+                        AssignedLotNumber = null
                     }
                 }
             };
 
             context.SalesOrders.Add(ov2);
             await context.SaveChangesAsync();
-
-            // Descontar las 15 bolsas restantes de ALM-003 por FIFO y registrar salida en Kardex
-            await DeductStockAndRegisterKardex(context, almPt.Id, pt001.Id, ptLotNumber, 15.0m, pt001.Cost,
-                dispatchDate2, "SALIDA_VENTA", "OV-E2E-0002",
-                $"Despacho por venta a {cli002.Name} ({cli002.Code}) bajo OV-E2E-0002. Lote FIFO: {ptLotNumber}.", "Módulo de Ventas");
+        }
+        else
+        {
+            ov2.OrderNumber = "OV-20261021-0002";
+            ov2.Status = "Confirmada";
+            ov2.DispatchedDate = null;
+            foreach (var line in ov2.Lines)
+            {
+                line.IsDispatched = false;
+                line.DispatchedQuantity = 0.0m;
+            }
         }
 
         await context.SaveChangesAsync();

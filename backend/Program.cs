@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Threading.RateLimiting;
 using backend.Data;
 using backend.Services;
@@ -279,6 +279,7 @@ app.MapPost("/api/seed/purchases", async (IServiceProvider sp) =>
     try
     {
         await PurchasingDataSeeder.SeedAsync(sp);
+        await TransactionalE2ESeeder.SeedAsync(sp);
         return Results.Ok(new { message = "Seeder de Compras e Inventario Inicial ejecutado exitosamente." });
     }
     catch (Exception ex)
@@ -341,6 +342,7 @@ app.MapPost("/api/seed/all", async (IServiceProvider sp) =>
         await BomDataSeeder.SeedAsync(sp);
         await RoutingDataSeeder.SeedAsync(sp);
         await PurchasingDataSeeder.SeedAsync(sp);
+        await TransactionalE2ESeeder.SeedAsync(sp);
         return Results.Ok(new { message = "Todos los seeders oficiales (Identity + Datos Maestros + BOM + Rutas + Compras/Inventario) ejecutados exitosamente." });
     }
     catch (Exception ex)
@@ -370,6 +372,7 @@ using (var scope = app.Services.CreateScope())
             BomDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
             RoutingDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
             PurchasingDataSeeder.SeedAsync(services).GetAwaiter().GetResult();
+            TransactionalE2ESeeder.SeedAsync(services).GetAwaiter().GetResult();
             logger.LogInformation("Migraciones, Seeder de Identity, Datos Maestros, BOM, Rutas y Compras ejecutados satisfactoriamente.");
         }
         else

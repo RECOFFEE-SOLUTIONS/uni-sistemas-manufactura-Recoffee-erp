@@ -419,7 +419,7 @@ function ModernTreeNode({ node, isRoot = false }: { node: BomTreeNode; isRoot?: 
         label: "Nivel 0 • Terminado",
       };
     }
-    if (node.isSubassembly || node.level === 1) {
+    if (node.isSubassembly) {
       return {
         card: "bg-purple-500/5 dark:bg-purple-500/10 border-purple-500/40 dark:border-purple-500/30 ring-1 ring-purple-500/20",
         badge: "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/40",

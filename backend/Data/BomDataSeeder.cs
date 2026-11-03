@@ -15,12 +15,14 @@ public static class BomDataSeeder
 
         var semItem = await context.Items.FirstOrDefaultAsync(i => i.Code == "SEM-001");
         var ptItem = await context.Items.FirstOrDefaultAsync(i => i.Code == "PT-001");
+        var pt002Item = await context.Items.FirstOrDefaultAsync(i => i.Code == "PT-002");
         var mp001 = await context.Items.FirstOrDefaultAsync(i => i.Code == "MP-001");
         var mp002 = await context.Items.FirstOrDefaultAsync(i => i.Code == "MP-002");
         var mp003 = await context.Items.FirstOrDefaultAsync(i => i.Code == "MP-003");
         var mp004 = await context.Items.FirstOrDefaultAsync(i => i.Code == "MP-004");
         var emp001 = await context.Items.FirstOrDefaultAsync(i => i.Code == "EMP-001");
         var emp002 = await context.Items.FirstOrDefaultAsync(i => i.Code == "EMP-002");
+        var emp003 = await context.Items.FirstOrDefaultAsync(i => i.Code == "EMP-003");
 
         if (semItem == null || ptItem == null || mp001 == null || mp002 == null || mp003 == null || mp004 == null || emp001 == null || emp002 == null)
         {
@@ -28,11 +30,15 @@ public static class BomDataSeeder
             return;
         }
 
-        // 1. BOM Nivel 1: Subensamble SEM-001 (base 5kg)
+        // 1. BOM Nivel 1: Subensamble SEM-001 (Mezcla Base Harina de Café - Base 5kg)
         // Consume MP-001 (3.5kg), MP-002 (0.5kg), MP-003 (0.5kg), MP-004 (0.5kg)
-        if (!await context.BomHeaders.AnyAsync(b => b.Code == "BOM-SEM-001"))
+        var bomSem = await context.BomHeaders
+            .Include(b => b.Components)
+            .FirstOrDefaultAsync(b => b.Code == "BOM-SEM-001");
+
+        if (bomSem == null)
         {
-            var bomSem = new BomHeader
+            bomSem = new BomHeader
             {
                 Code = "BOM-SEM-001",
                 ParentItemId = semItem.Id,
@@ -82,21 +88,30 @@ public static class BomDataSeeder
                     }
                 }
             };
-
             context.BomHeaders.Add(bomSem);
             logger.LogInformation("Sembrando BOM Nivel 1: {Code} para {Item}", bomSem.Code, semItem.Code);
         }
-
-        // 2. BOM Nivel 0: Producto terminado PT-001 (1 bolsa)
-        // Consume SEM-001 (5kg) y los insumos de empaque EMP-001 (1 unidad) y EMP-002 (1 unidad)
-        if (!await context.BomHeaders.AnyAsync(b => b.Code == "BOM-PT-001"))
+        else
         {
-            var bomPt = new BomHeader
+            bomSem.BaseQuantity = 5.0m;
+            bomSem.UnitOfMeasure = "kg";
+            bomSem.IsActive = true;
+        }
+
+        // 2. BOM Nivel 0: Producto terminado principal PT-001 (Abono Orgánico ReCoffee Bolsa 5 kg)
+        // Consume SEM-001 (5.0kg), EMP-001 (1 unidad) y EMP-002 (1 unidad)
+        var bomPt1 = await context.BomHeaders
+            .Include(b => b.Components)
+            .FirstOrDefaultAsync(b => b.Code == "BOM-PT-001");
+
+        if (bomPt1 == null)
+        {
+            bomPt1 = new BomHeader
             {
                 Code = "BOM-PT-001",
                 ParentItemId = ptItem.Id,
                 Version = "v1.0",
-                Description = "Receta de Ensacado y Empaque de Abono Orgánico ReCoffee 5kg (BOM Nivel 0)",
+                Description = "Receta de Ensacado y Empaque de Abono Orgánico ReCoffee Bolsa 5 kg (BOM Nivel 0)",
                 BaseQuantity = 1.0m,
                 UnitOfMeasure = "bolsa",
                 IsActive = true,
@@ -110,16 +125,16 @@ public static class BomDataSeeder
                         UnitOfMeasure = "kg",
                         ScrapPercentage = 0.0m,
                         Level = 0,
-                        Notes = "Subensamble de mezcla base formulada y secada"
+                        Notes = "Subensamble de mezcla base formulada y secada (5kg)"
                     },
                     new BomComponent
                     {
                         ComponentItemId = emp001.Id,
                         Quantity = 1.0m,
-                        UnitOfMeasure = "bolsa",
+                        UnitOfMeasure = "unidad",
                         ScrapPercentage = 0.0m,
                         Level = 0,
-                        Notes = "Saco Kraft biodegradable tricapa de 5kg"
+                        Notes = "Saco Kraft / Bolsa de empaque de 5kg"
                     },
                     new BomComponent
                     {
@@ -132,9 +147,76 @@ public static class BomDataSeeder
                     }
                 }
             };
+            context.BomHeaders.Add(bomPt1);
+            logger.LogInformation("Sembrando BOM Nivel 0: {Code} para {Item}", bomPt1.Code, ptItem.Code);
+        }
+        else
+        {
+            bomPt1.BaseQuantity = 1.0m;
+            bomPt1.UnitOfMeasure = "bolsa";
+            bomPt1.IsActive = true;
+        }
 
-            context.BomHeaders.Add(bomPt);
-            logger.LogInformation("Sembrando BOM Nivel 0: {Code} para {Item}", bomPt.Code, ptItem.Code);
+        // 3. BOM Nivel 0: Segunda variante de Producto Terminado PT-002 (Abono Orgánico ReCoffee Saco 25 kg)
+        // Consume SEM-001 (25.0kg), EMP-003 (1 unidad) y EMP-002 (1 unidad)
+        if (pt002Item != null && emp003 != null)
+        {
+            var bomPt2 = await context.BomHeaders
+                .Include(b => b.Components)
+                .FirstOrDefaultAsync(b => b.Code == "BOM-PT-002");
+
+            if (bomPt2 == null)
+            {
+                bomPt2 = new BomHeader
+                {
+                    Code = "BOM-PT-002",
+                    ParentItemId = pt002Item.Id,
+                    Version = "v1.0",
+                    Description = "Receta de Ensacado y Empaque de Abono Orgánico ReCoffee Saco 25 kg (BOM Nivel 0)",
+                    BaseQuantity = 1.0m,
+                    UnitOfMeasure = "saco",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    Components = new List<BomComponent>
+                    {
+                        new BomComponent
+                        {
+                            ComponentItemId = semItem.Id,
+                            Quantity = 25.0m,
+                            UnitOfMeasure = "kg",
+                            ScrapPercentage = 0.0m,
+                            Level = 0,
+                            Notes = "Subensamble de mezcla base formulada y secada (25kg)"
+                        },
+                        new BomComponent
+                        {
+                            ComponentItemId = emp003.Id,
+                            Quantity = 1.0m,
+                            UnitOfMeasure = "unidad",
+                            ScrapPercentage = 0.0m,
+                            Level = 0,
+                            Notes = "Saco Kraft de 25 kg multicapa de alta resistencia"
+                        },
+                        new BomComponent
+                        {
+                            ComponentItemId = emp002.Id,
+                            Quantity = 1.0m,
+                            UnitOfMeasure = "unidad",
+                            ScrapPercentage = 0.0m,
+                            Level = 0,
+                            Notes = "Etiqueta técnica informativa y precinto de sellado"
+                        }
+                    }
+                };
+                context.BomHeaders.Add(bomPt2);
+                logger.LogInformation("Sembrando BOM Nivel 0: {Code} para segunda variante {Item}", bomPt2.Code, pt002Item.Code);
+            }
+            else
+            {
+                bomPt2.BaseQuantity = 1.0m;
+                bomPt2.UnitOfMeasure = "saco";
+                bomPt2.IsActive = true;
+            }
         }
 
         await context.SaveChangesAsync();
